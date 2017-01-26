@@ -1,4 +1,4 @@
-extern crate clap;
+// extern crate clap;
 
 mod client;
 mod model;
