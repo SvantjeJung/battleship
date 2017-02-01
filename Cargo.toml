@@ -2,11 +2,11 @@
 name = "battleship"
 version = "0.1.0"
 authors = [
-    "Dennis Altenhoff <daltenhoff@uos.de>",
-    "Tim Bohne <tbohne@uos.de>",
-    "Svantje Jung <svjung@uos.de>",
-    "Famke Lamberti <flamberti@uos.de>"
+    "Dennis Altenhoff <daltenhoff@uos.de> ",
+    " Tim Bohne <tbohne@uos.de> ",
+    " Svantje Jung <svjung@uos.de> ",
+    " Famke Lamberti <flamberti@uos.de> "
 ]
 
 [dependencies]
-# clap = "2.20"
+clap = "2.20"
