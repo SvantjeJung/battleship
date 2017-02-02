@@ -156,11 +156,12 @@ fn place_ships(mut player1: &mut types::Player, mut player2: &mut types::Player)
         for _ in 0..i.amount {
             err = 1;
             while err == 1 {
-                println!("{}, please enter the first coordinate for your {:?}.", player1.name, i.name);
+                println!("{}, please enter the first coordinate for your {:?}.",
+                    player1.name, i.name);
                 err = place(&mut player1, i);
-                player1.capacity += i.size;
-                print_boards(&player1.own_board, &player1.op_board);
-            }    
+            }
+            player1.capacity += i.size;
+            print_boards(&player1.own_board, &player1.op_board);
         }
     }
 
@@ -169,11 +170,12 @@ fn place_ships(mut player1: &mut types::Player, mut player2: &mut types::Player)
         for _ in 0..i.amount {
             err = 1;
             while err == 1 {
-                println!("{}, please enter the first coordinate for your {:?}.", player2.name, i.name);
+                println!("{}, please enter the first coordinate for your {:?}.",
+                    player2.name, i.name);
                 err = place(&mut player2, i);
-                player2.capacity += i.size;
-                print_boards(&player2.own_board, &player2.op_board);
-            }    
+            }
+            player2.capacity += i.size;
+            print_boards(&player2.own_board, &player2.op_board);
         }
     }
 }
