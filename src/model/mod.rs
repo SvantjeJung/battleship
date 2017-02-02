@@ -18,18 +18,18 @@ fn print_boards(board1: &Vec<types::SubField>, board2: &Vec<types::SubField>) {
         print!("{}  ", cnt);
         for j in 0..10 {
             if board1[j + i * 10] == types::SubField::Hit {
-                print!(" {} ", Red.paint(board1[j + i * 10]));    
+                print!(" {} ", Red.paint(board1[j + i * 10]));
             } else {
                 print!(" {} ", board1[j + i * 10]);
             }
         }
         print!("        ");
         print!("{}  ", cnt);
-        for k in 0..10 {
-            if board2[k + i * 10] == types::SubField::Hit {
-                print!(" {} ", Green.paint(board2[k + i * 10]));    
+        for j in 0..10 {
+            if board2[j + i * 10] == types::SubField::Hit {
+                print!(" {} ", Green.paint(board2[j + i * 10]));
             } else {
-                print!(" {} ", board2[k + i * 10]);
+                print!(" {} ", board2[j + i * 10]);
             }
         }
         println!("");
@@ -69,11 +69,11 @@ fn place(player: &mut types::Player, ship: types::Ship) -> u8 {
         input = get_input();
         match player.own_board[input] {
             types::SubField::Water => { indices.push(input); },
-            _ => { 
+            _ => {
                 println!("Invalid input, again please.");
                 input = 100;
             },
-        }    
+        }
     }
 
     println!("{}{}", "Enter 'h' for a horizontal (upwards) orientation of the ship,",
@@ -83,13 +83,13 @@ fn place(player: &mut types::Player, ship: types::Ship) -> u8 {
     while orientation == "x" {
         orientation = read_string();
         match orientation.as_ref() {
-            "h" => { orientation = "h".to_string(); },
-            "v" => { orientation = "v".to_string(); },
-            _ => { 
+            "h" => {},
+            "v" => {},
+            _ => {
                 println!("Invalid input, again please.");
                 orientation = "x".to_string();
             }
-        }    
+        }
     }
 
     /* Determines the length of the current ship. */
@@ -105,25 +105,25 @@ fn place(player: &mut types::Player, ship: types::Ship) -> u8 {
         for _ in 0..len - 1 {
             /* Check to prevent out of bounds errors. */
             if input >= 10 {
-                input -= 10;    
+                input -= 10;
             }
             if player.own_board[input] != types::SubField::Water
                 /* input < 10 --> no field above */
-                || input < 10  {
+                || input < 10 {
                     println!("Invalid position for this ship.");
                     println!("Please choose another coordinate.");
                     return 1
             }
             indices.push(input);
-        } 
+        }
     } else {
         for _ in 0..len - 1 {
             /* Check to prevent out of bounds errors. */
             if input < 99 {
-                input += 1;    
+                input += 1;
             }
             if player.own_board[input] != types::SubField::Water
-                /* unit rank == 9 --> no field to the right */
+                /* unit position == 9 --> no field to the right */
                 || (input % 10) == 9 {
                     println!("Invalid position for this ship.");
                     println!("Please choose another coordinate.");
@@ -144,23 +144,20 @@ fn place(player: &mut types::Player, ship: types::Ship) -> u8 {
 /// Handles the initial ship placement for each player.
 fn place_ships(mut player1: &mut types::Player, mut player2: &mut types::Player) {
 
-    /* A vector of all the ships each player needs to place. */
-    let mut ships = Vec::new();
-    ships.push(types::Ship::Carrier);
-    ships.push(types::Ship::Battleship);
-    ships.push(types::Ship::Battleship);
-    ships.push(types::Ship::Cruiser);
-    ships.push(types::Ship::Cruiser);
-    ships.push(types::Ship::Cruiser);
-    ships.push(types::Ship::Submarine);
-    ships.push(types::Ship::Submarine);
-    ships.push(types::Ship::Submarine);
-    ships.push(types::Ship::Submarine);
-    ships.push(types::Ship::Destroyer);
-    ships.push(types::Ship::Destroyer);
-    ships.push(types::Ship::Destroyer);
-    ships.push(types::Ship::Destroyer);
-    ships.push(types::Ship::Destroyer);
+    /* A vector of all the ships each player needs to place.
+       The default version: #  Class of ship Size
+                            1   Carrier       5
+                            2   Battleship    4
+                            3   Cruiser       3
+                            4   Submarine     3
+                            5   Destroyer     2
+    */
+    let ships = vec![types::Ship::Carrier, types::Ship::Battleship,
+        types::Ship::Battleship, types::Ship::Cruiser, types::Ship::Cruiser,
+        types::Ship::Cruiser, types::Ship::Submarine, types::Ship::Submarine,
+        types::Ship::Submarine, types::Ship::Submarine, types::Ship::Destroyer,
+        types::Ship::Destroyer, types::Ship::Destroyer, types::Ship::Destroyer,
+        types::Ship::Destroyer];
 
     print_boards(&player1.own_board, &player1.op_board);
 
@@ -174,7 +171,7 @@ fn place_ships(mut player1: &mut types::Player, mut player2: &mut types::Player)
             println!("Player1, please enter the first coordinate for your {:?}.", i);
             err = place(&mut player1, *i);
             print_boards(&player1.own_board, &player1.op_board);
-        } 
+        }
     }
 
     /* Asks player2 to place the ships. */
@@ -234,7 +231,7 @@ fn match_move(first: &mut types::Player, second: &mut types::Player, idx: usize)
             println!("Miss - try again.");
             first.op_board[idx] = types::SubField::WaterHit;
         }
-        types::SubField::Ship => { 
+        types::SubField::Ship => {
             println!("Hit!");
             first.op_board[idx] = types::SubField::Hit;
             second.own_board[idx] = types::SubField::Hit;
@@ -258,7 +255,7 @@ pub fn game_over(player: &types::Player) -> bool {
 }
 
 pub fn start_match() {
-        
+
     /* Creates the initial (empty) boards (10 x 10) for player1 and player2. */
     let mut player1 = types::Player {
         own_board: vec![types::SubField::Water; 100],
@@ -291,6 +288,6 @@ pub fn start_match() {
             println!("G A M E   O V E R");
             println!("Congratulations, Player2");
             break;
-        }        
+        }
     }
 }
