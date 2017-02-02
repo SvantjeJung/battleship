@@ -1,20 +1,17 @@
 use std::fmt;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub enum Ship {
-    Carrier,
-    Battleship,
-    Cruiser,
-    Submarine,
-    Destroyer,
-}
-
-#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum SubField {
     Water,
     Ship,
     Hit,
     WaterHit,
+}
+
+pub struct ShipType {
+    pub name: String,
+    pub size: usize,
+    pub amount: usize,
 }
 
 pub struct Player {
