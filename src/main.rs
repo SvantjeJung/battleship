@@ -8,6 +8,8 @@ mod view;
 
 use clap::AppSettings;
 
+const BOARD_SIZE: u8 = 10;
+
 fn main() {
     // initialize the CLI
     let battleship = clap_app!(battleship =>
@@ -52,7 +54,7 @@ fn main() {
             let name = server_args.value_of("name").unwrap();
 
             // optional arguments
-            let mut size = 10;
+            let mut size = BOARD_SIZE;
             if let Some(val) = server_args.value_of("size") {
                 match val.parse::<u8>() {
                     Ok(val) => size = val,
