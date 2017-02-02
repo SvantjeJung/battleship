@@ -58,7 +58,7 @@ fn read_string() -> String {
 }
 
 /// The actual placement of the ships.
-fn place(player: &mut types::Player, ship: &types::ShipType) -> u8 {
+fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), String> {
 
     /* Vector to collect the indices for the possible ship position. */
     let mut indices = Vec::new();
@@ -96,9 +96,8 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> u8 {
             }
             /* input < 10 --> no field above */
             if player.own_board[input] != types::SubField::Water || input < 10 {
-                    println!("Invalid position for this ship.");
-                    println!("Please choose another coordinate.");
-                    return 1
+                return Err("Invalid position for this ship, please choose another coordinate."
+                    .to_string())
             }
             indices.push(input);
         }
@@ -110,9 +109,8 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> u8 {
             }
             /* unit position == 9 --> no field to the right */
             if player.own_board[input] != types::SubField::Water || (input % 10) == 9 {
-                    println!("Invalid position for this ship.");
-                    println!("Please choose another coordinate.");
-                    return 1
+                return Err("Invalid position for this ship, please choose another coordinate."
+                    .to_string())
             }
             indices.push(input);
         }
@@ -123,7 +121,7 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> u8 {
         player.own_board[*i] = types::SubField::Ship;
     }
 
-    0
+    Ok(())
 }
 
 /// Handles the initial ship placement for each player.
@@ -146,17 +144,16 @@ fn place_ships(mut player1: &mut types::Player, mut player2: &mut types::Player)
 
     print_boards(&player1.own_board, &player1.op_board);
 
-    /* Error code, should be replaced by proper error handling later. */
-    let mut err;
-
     /* Asks player1 to place the ships. */
     for i in ships.iter() {
         for _ in 0..i.amount {
-            err = 1;
-            while err == 1 {
+            loop {
                 println!("{}, please enter the first coordinate for your {:?} ({} fields).",
                     player1.name, i.name, i.size);
-                err = place(&mut player1, i);
+                match place(&mut player1, i) {
+                    Ok(_) => { break; },
+                    Err(e) => { println!("{}", e); },
+                }
             }
             player1.capacity += i.size;
             print_boards(&player1.own_board, &player1.op_board);
@@ -166,11 +163,13 @@ fn place_ships(mut player1: &mut types::Player, mut player2: &mut types::Player)
     /* Asks player2 to place the ships. */
     for i in ships.iter() {
         for _ in 0..i.amount {
-            err = 1;
-            while err == 1 {
+            loop {
                 println!("{}, please enter the first coordinate for your {:?} ({} fields).",
                     player2.name, i.name, i.size);
-                err = place(&mut player2, i);
+                match place(&mut player2, i) {
+                    Ok(_) => { break; },
+                    Err(e) => { println!("{}", e); },
+                }
             }
             player2.capacity += i.size;
             print_boards(&player2.own_board, &player2.op_board);
