@@ -94,9 +94,8 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> u8 {
             if input >= 10 {
                 input -= 10;
             }
-            if player.own_board[input] != types::SubField::Water
-                /* input < 10 --> no field above */
-                || input < 10 {
+            /* input < 10 --> no field above */
+            if player.own_board[input] != types::SubField::Water || input < 10 {
                     println!("Invalid position for this ship.");
                     println!("Please choose another coordinate.");
                     return 1
@@ -109,9 +108,8 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> u8 {
             if input < 99 {
                 input += 1;
             }
-            if player.own_board[input] != types::SubField::Water
-                /* unit position == 9 --> no field to the right */
-                || (input % 10) == 9 {
+            /* unit position == 9 --> no field to the right */
+            if player.own_board[input] != types::SubField::Water || (input % 10) == 9 {
                     println!("Invalid position for this ship.");
                     println!("Please choose another coordinate.");
                     return 1
@@ -156,8 +154,8 @@ fn place_ships(mut player1: &mut types::Player, mut player2: &mut types::Player)
         for _ in 0..i.amount {
             err = 1;
             while err == 1 {
-                println!("{}, please enter the first coordinate for your {:?}.",
-                    player1.name, i.name);
+                println!("{}, please enter the first coordinate for your {:?} ({} fields).",
+                    player1.name, i.name, i.size);
                 err = place(&mut player1, i);
             }
             player1.capacity += i.size;
@@ -170,8 +168,8 @@ fn place_ships(mut player1: &mut types::Player, mut player2: &mut types::Player)
         for _ in 0..i.amount {
             err = 1;
             while err == 1 {
-                println!("{}, please enter the first coordinate for your {:?}.",
-                    player2.name, i.name);
+                println!("{}, please enter the first coordinate for your {:?} ({} fields).",
+                    player2.name, i.name, i.size);
                 err = place(&mut player2, i);
             }
             player2.capacity += i.size;
@@ -219,6 +217,8 @@ fn get_input() -> usize {
     input
 }
 
+/// Determines the type of the SubField that got hit 
+/// by the current move and sets it accordingly.
 fn match_move(first: &mut types::Player, second: &mut types::Player, idx: usize) {
 
     match second.own_board[idx] {
@@ -249,16 +249,18 @@ pub fn game_over(player: &types::Player) -> bool {
     player.capacity <= 0
 }
 
+/// Initializes the players and the boards and provides the
+/// game loop which lets the players perform their moves alternately.
 pub fn start_match() {
 
-    /* Creates the initial (empty) boards (10 x 10) for player1 and player2. */
+    /* Creates the initial (empty) boards (10 x 10) for player1. */
     let mut player1 = types::Player {
         own_board: vec![types::SubField::Water; 100],
         op_board: vec![types::SubField::Water; 100],
         capacity: 0,
         name: "Player1".to_string(),
     };
-
+    /* Creates the initial (empty) boards (10 x 10) for player2. */
     let mut player2 = types::Player {
         own_board: vec![types::SubField::Water; 100],
         op_board: vec![types::SubField::Water; 100],
@@ -266,6 +268,7 @@ pub fn start_match() {
         name: "Player2".to_string(),
     };
 
+    /* Initializes the boards with the player's ships. */
     place_ships(&mut player1, &mut player2);
 
     loop {
