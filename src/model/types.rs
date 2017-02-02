@@ -1,6 +1,15 @@
 use std::fmt;
 
 #[derive(Copy, Clone, PartialEq, Debug)]
+pub enum Ship {
+    Carrier,
+    Battleship,
+    Cruiser,
+    Submarine,
+    Destroyer,
+}
+
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub enum SubField {
     Water,
     Ship,
@@ -17,9 +26,9 @@ impl fmt::Display for SubField {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             SubField::Water => write!(f, " ~ "),
-            SubField::Ship => write!(f, "\u{2588}\u{2588}\u{2588}"),
-            SubField::Hit => write!(f, " X "),
-            SubField::WaterHit => write!(f, " O ")
+            SubField::Ship => write!(f, " ⛵ "),
+            SubField::Hit => write!(f, " ❌ "),
+            SubField::WaterHit => write!(f, " ○ ")
         }
     }
 }
