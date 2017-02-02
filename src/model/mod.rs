@@ -9,7 +9,7 @@ mod types;
 /// Visualization of the boards.
 fn print_boards(board1: &Vec<types::SubField>, board2: &Vec<types::SubField>) {
     println!("{}{}", "------------------ O W N   B O A R D ------------------",
-        "------------------------- O P P O N E N T ----------------");
+        "-------------------------- O P P O N E N T ---------------");
 
     let mut cnt = 9;
 
@@ -40,7 +40,7 @@ fn print_boards(board1: &Vec<types::SubField>, board2: &Vec<types::SubField>) {
         "               A    B    C    D    E    F    G    H    I    J");
     println!("");
     println!("{}{}", "----------------------------------------------------",
-        "--------------------------------------------------------------");
+        "-------------------------------------------------------------");
 }
 
 /// Reads a string from the terminal / user.
@@ -216,7 +216,7 @@ fn get_input() -> usize {
     input
 }
 
-/// Determines the type of the SubField that got hit 
+/// Determines the type of the SubField that got hit
 /// by the current move and sets it accordingly.
 fn match_move(first: &mut types::Player, second: &mut types::Player, idx: usize) {
 
