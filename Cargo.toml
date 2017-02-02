@@ -9,9 +9,5 @@ authors = [
 ]
 
 [dependencies]
-<<<<<<< HEAD
-# clap = "2.20"
-term-painter = "0.2"
-=======
 clap = "2.20"
->>>>>>> dev
+term-painter = "0.2"

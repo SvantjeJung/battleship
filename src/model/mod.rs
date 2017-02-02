@@ -250,7 +250,7 @@ pub fn game_over(player: &types::Player) -> bool {
 
 /// Initializes the players and the boards and provides the
 /// game loop which lets the players perform their moves alternately.
-pub fn start_match() {
+pub fn start_round() {
 
     /* Creates the initial (empty) boards (10 x 10) for player1. */
     let mut player1 = types::Player {
