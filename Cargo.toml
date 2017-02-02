@@ -2,12 +2,16 @@
 name = "battleship"
 version = "0.1.0"
 authors = [
-    "Dennis Altenhoff <daltenhoff@uos.de>",
-    "Tim Bohne <tbohne@uos.de>",
-    "Svantje Jung <svjung@uos.de>",
-    "Famke Lamberti <flamberti@uos.de>"
+    "Dennis Altenhoff <daltenhoff@uos.de> ",
+    " Tim Bohne <tbohne@uos.de> ",
+    " Svantje Jung <svjung@uos.de> ",
+    " Famke Lamberti <flamberti@uos.de> "
 ]
 
 [dependencies]
+<<<<<<< HEAD
 # clap = "2.20"
 term-painter = "0.2"
+=======
+clap = "2.20"
+>>>>>>> dev
