@@ -162,7 +162,7 @@ fn place_ships(mut player1: &mut types::Player, mut player2: &mut types::Player)
     ships.push(types::Ship::Destroyer);
     ships.push(types::Ship::Destroyer);
 
-    print_boards(&player1.own_board, &player1.opponent_board);
+    print_boards(&player1.own_board, &player1.op_board);
 
     /* Error code, should be replaced by proper error handling later. */
     let mut err;
@@ -173,7 +173,7 @@ fn place_ships(mut player1: &mut types::Player, mut player2: &mut types::Player)
         while err == 1 {
             println!("Player1, please enter the first coordinate for your {:?}.", i);
             err = place(&mut player1, *i);
-            print_boards(&player1.own_board, &player1.opponent_board);
+            print_boards(&player1.own_board, &player1.op_board);
         } 
     }
 
@@ -183,7 +183,7 @@ fn place_ships(mut player1: &mut types::Player, mut player2: &mut types::Player)
         while err == 1 {
             println!("Player2, please enter the first coordinate for your {:?}.", i);
             err = place(&mut player2, *i);
-            print_boards(&player2.own_board, &player2.opponent_board);
+            print_boards(&player2.own_board, &player2.op_board);
         }
     }
 }
@@ -227,17 +227,18 @@ fn get_input() -> usize {
     input
 }
 
-fn match_move(idx: usize, own_board: &mut Vec<types::SubField>, op_board: &mut Vec<types::SubField>) {
+fn match_move(first: &mut types::Player, second: &mut types::Player, idx: usize) {
 
-    match op_board[idx] {
+    match second.own_board[idx] {
         types::SubField::Water => {
             println!("Miss - try again.");
-            own_board[idx] = types::SubField::WaterHit;
+            first.op_board[idx] = types::SubField::WaterHit;
         }
         types::SubField::Ship => { 
             println!("Hit!");
-            op_board[idx] = types::SubField::Hit;
-            own_board[idx] = types::SubField::Hit;
+            first.op_board[idx] = types::SubField::Hit;
+            second.own_board[idx] = types::SubField::Hit;
+            second.capacity -= 1;
         },
         types::SubField::Hit => { println!("Already hit."); }
         types::SubField::WaterHit => { println!("Miss - try again."); }
@@ -245,17 +246,15 @@ fn match_move(idx: usize, own_board: &mut Vec<types::SubField>, op_board: &mut V
 }
 
 /// Lets the players perform their moves.
-fn make_move(p1: bool, own_board: &mut Vec<types::SubField>, op_board: &mut Vec<types::SubField>) {
+fn make_move(mut first: &mut types::Player, mut second: &mut types::Player) {
+    println!("Enter coordinates, {}:", first.name);
+    let input = get_input();
+    match_move(&mut first, &mut second, input);
+}
 
-    if p1 {
-        println!("Player1: ");
-        let input = get_input();
-        match_move(input, own_board, op_board);
-    } else {
-        println!("Player2: ");
-        let input = get_input();
-        match_move(input, own_board, op_board);
-    }
+/// Returns whether all the player's ships got destroyed.
+pub fn game_over(player: &types::Player) -> bool {
+    player.capacity <= 0
 }
 
 pub fn start_match() {
@@ -263,23 +262,35 @@ pub fn start_match() {
     /* Creates the initial (empty) boards (10 x 10) for player1 and player2. */
     let mut player1 = types::Player {
         own_board: vec![types::SubField::Water; 100],
-        opponent_board: vec![types::SubField::Water; 100],
+        op_board: vec![types::SubField::Water; 100],
+        capacity: 44,
+        name: "Player1".to_string(),
     };
 
     let mut player2 = types::Player {
         own_board: vec![types::SubField::Water; 100],
-        opponent_board: vec![types::SubField::Water; 100],
+        op_board: vec![types::SubField::Water; 100],
+        capacity: 44,
+        name: "Player2".to_string(),
     };
 
     place_ships(&mut player1, &mut player2);
 
     loop {
-        print_boards(&player1.own_board, &player1.opponent_board);
-        make_move(true, &mut player1.opponent_board, &mut player2.own_board);
-        // check if game over
+        print_boards(&player1.own_board, &player1.op_board);
+        make_move(&mut player1, &mut player2);
+        if game_over(&player2) {
+            println!("G A M E   O V E R");
+            println!("Congratulations, Player1");
+            break;
+        }
 
-        print_boards(&player2.own_board, &player2.opponent_board);
-        make_move(false, &mut player2.opponent_board, &mut player1.own_board);
-        // check if game over
+        print_boards(&player2.own_board, &player2.op_board);
+        make_move(&mut player2, &mut player1);
+        if game_over(&player1) {
+            println!("G A M E   O V E R");
+            println!("Congratulations, Player2");
+            break;
+        }        
     }
 }

@@ -19,7 +19,11 @@ pub enum SubField {
 
 pub struct Player {
     pub own_board: Vec<SubField>,
-    pub opponent_board: Vec<SubField>,
+    pub op_board: Vec<SubField>,
+    /* The "life" basically - the amount of hits necessary
+       for the opponent to win the game. */
+    pub capacity: usize,
+    pub name: String,
 }
 
 impl fmt::Display for SubField {
