@@ -1,0 +1,6 @@
+# Default vectors of ships
+# Name      Cells   Amount
+Submarine   2       4
+Destroyer   3       3
+Cruiser     4       2
+Battleship  5       1
