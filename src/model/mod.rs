@@ -1,5 +1,6 @@
 use term_painter::ToStyle;
 use term_painter::Color::*;
+use rand::{thread_rng, Rng, sample};
 
 pub mod types;
 pub mod helper;
@@ -60,8 +61,8 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), Strin
     }
 
     println!(
-    "Enter 'h' for a horizontal (rightwards) orientation of the ship,
-    'v' for a vertical (upwards) one."
+        "Enter 'h' for a horizontal (rightwards) orientation of the ship,
+        'v' for a vertical (upwards) one."
     );
 
     let mut ori = helper::read_string();
@@ -96,6 +97,58 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), Strin
             }
             input += 1;
             indices.push(input);
+        }
+    }
+
+    /* Places the ships on the board. */
+    for i in indices.iter() {
+        player.own_board[*i] = types::SubField::Ship;
+    }
+
+    Ok(())
+}
+
+/// Random ship placement for the AI.
+fn place_ai(player: &mut types::Player, ship: &types::ShipType) -> Result<(), String> {
+
+    /* Vector to collect the indices for the possible ship position. */
+    let mut indices = Vec::new();
+
+    let mut rng = thread_rng();
+    let mut rand = sample(&mut rng, 0..99, 1);
+
+    loop {
+        match player.own_board[rand[0]] {
+            types::SubField::Water => { indices.push(rand[0]); break; },
+            _ => { rand = sample(&mut rng, 0..99, 1); },
+        }
+    }
+
+    /* Random bool to determine the orientation. */
+    let ori = rng.gen::<bool>();
+
+    /* Vertical */
+    if ori {
+        for i in 0..ship.size - 1 {
+            /* input < 10 --> no field above */
+            if player.own_board[rand[0]] != types::SubField::Water
+                || rand[0] < 10 && i != ship.size - 1 {
+                    /* Later replaced by error type. */
+                    return Err("".to_string())
+            }
+            rand[0] -= 10;
+            indices.push(rand[0]);
+        }
+    } else {
+        for i in 0..ship.size - 1 {
+            /* unit position == 9 --> no field to the right */
+            if player.own_board[rand[0]] != types::SubField::Water
+                || (rand[0] % 10) == 9 && i != ship.size - 1 {
+                    /* Later replaced by error type. */
+                    return Err("".to_string())
+            }
+            rand[0] += 1;
+            indices.push(rand[0]);
         }
     }
 
@@ -144,16 +197,26 @@ fn place_ships(mut player1: &mut types::Player, mut player2: &mut types::Player)
     /* Asks player2 to place the ships. */
     for i in ships.iter() {
         for _ in 0..i.amount {
-            loop {
-                println!("{}, please enter the first coordinate for your {:?} ({} fields).",
-                    player2.name, i.name, i.size);
-                match place(&mut player2, i) {
-                    Ok(_) => { break; },
-                    Err(e) => { println!("{}", e); },
+            if player2.player_type == types::PlayerType::Human {
+                loop {
+                    println!("{}, please enter the first coordinate for your {:?} ({} fields).",
+                        player2.name, i.name, i.size);
+                    match place(&mut player2, i) {
+                        Ok(_) => { break; },
+                        Err(e) => { println!("{}", e); },
+                    }
                 }
+                print_boards(&player2.own_board, &player2.op_board);
+                player2.capacity += i.size;
+            } else {
+                loop {
+                    match place_ai(&mut player2, i) {
+                        Ok(_) => { break; },
+                        Err(_) => {},
+                    }
+                }
+                player2.capacity += i.size;
             }
-            player2.capacity += i.size;
-            print_boards(&player2.own_board, &player2.op_board);
         }
     }
 }
@@ -219,9 +282,16 @@ fn match_move(first: &mut types::Player, second: &mut types::Player, idx: usize)
 
 /// Lets the players perform their moves.
 fn make_move(mut first: &mut types::Player, mut second: &mut types::Player) {
-    println!("Enter coordinates, {}:", first.name);
-    let input = get_input();
-    match_move(&mut first, &mut second, input);
+
+    if first.player_type == types::PlayerType::Human {
+        println!("Enter coordinates, {}:", first.name);
+        let input = get_input();
+        match_move(&mut first, &mut second, input);
+    } else {
+        let mut rng = thread_rng();
+        let rand = rng.gen_range(0, 100);
+        match_move(&mut first, &mut second, rand);
+    }
 }
 
 /// Returns whether all the player's ships got destroyed.
@@ -231,20 +301,24 @@ pub fn game_over(player: &types::Player) -> bool {
 
 /// Initializes the players and the boards and provides the
 /// game loop which lets the players perform their moves alternately.
-pub fn start_round() {
+pub fn start_round(mode: types::Mode) {
 
     /* Creates the initial (empty) boards (10 x 10) for player1. */
     let mut player1 = types::Player {
         own_board: vec![types::SubField::Water; 100],
         op_board: vec![types::SubField::Water; 100],
         capacity: 0,
+        /* Could be extended later to have an AI vs. AI version. */
+        player_type: types::PlayerType::Human,
         name: "Player1".to_string(),
     };
+
     /* Creates the initial (empty) boards (10 x 10) for player2. */
     let mut player2 = types::Player {
         own_board: vec![types::SubField::Water; 100],
         op_board: vec![types::SubField::Water; 100],
         capacity: 0,
+        player_type : types::PlayerType::DumbAI,
         name: "Player2".to_string(),
     };
 
@@ -260,7 +334,11 @@ pub fn start_round() {
             break;
         }
 
-        print_boards(&player2.own_board, &player2.op_board);
+        if mode != types::Mode::Single {
+            print_boards(&player2.own_board, &player2.op_board);
+        } else {
+            println!("AI - Move:");
+        }
         make_move(&mut player2, &mut player1);
         if game_over(&player1) {
             println!("G A M E   O V E R");

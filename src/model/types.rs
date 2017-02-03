@@ -1,5 +1,17 @@
 use std::fmt;
 
+#[derive(PartialEq)]
+pub enum Mode {
+    PvP,
+    Single,
+}
+
+#[derive(PartialEq)]
+pub enum PlayerType {
+    Human,
+    DumbAI,
+}
+
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum SubField {
     Water,
@@ -17,6 +29,7 @@ pub struct ShipType {
 pub struct Player {
     pub own_board: Vec<SubField>,
     pub op_board: Vec<SubField>,
+    pub player_type: PlayerType,
     /* The "life" basically - the amount of hits necessary
        for the opponent to win the game. */
     pub capacity: usize,
