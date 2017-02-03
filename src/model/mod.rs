@@ -48,60 +48,53 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), Strin
     /* Vector to collect the indices for the possible ship position. */
     let mut indices = Vec::new();
 
-    /* 100 --> invalid value */
-    let mut input = 100;
-    while input == 100 {
-        input = get_input();
+    let mut input = get_input();
+    loop {
         match player.own_board[input] {
-            types::SubField::Water => { indices.push(input); },
+            types::SubField::Water => { indices.push(input); break; },
             _ => {
                 println!("Invalid input, again please.");
-                input = 100;
+                input = get_input();
             },
         }
     }
 
     println!(
-    "Enter 'h' for a horizontal (rightwards) orientation of the ship, 
+    "Enter 'h' for a horizontal (rightwards) orientation of the ship,
     'v' for a vertical (upwards) one."
     );
 
-    let mut ori = helper::read_string();  
-    loop { 
+    let mut ori = helper::read_string();
+    loop {
         match ori.as_str() {
             "h" | "v" => break,
-            _ => { 
+            _ => {
                 println!("Invalid input, again please.");
                 ori = helper::read_string();
             }
-        }   
-    } 
+        }
+    }
 
     if ori == "v" {
-        for _ in 0..ship.size - 1 {
-            /* Check to prevent out of bounds errors. */
-            if input >= 10 {
-                input -= 10;
-            }
+        for i in 0..ship.size - 1 {
             /* input < 10 --> no field above */
-            if player.own_board[input] != types::SubField::Water || input < 10 {
-                return Err("Invalid position for this ship, please choose another coordinate."
-                    .to_string())
+            println!("{}", input);
+            if player.own_board[input] != types::SubField::Water
+                || (input < 10 && i != ship.size - 1) {
+                    return Err("Invalid position for this ship, please choose another coordinate."
+                        .to_string())
             }
-            indices.push(input);
+            indices.push(input - 10);
         }
     } else {
-        for _ in 0..ship.size - 1 {
-            /* Check to prevent out of bounds errors. */
-            if input < 99 {
-                input += 1;
-            }
+        for i in 0..ship.size - 1 {
             /* unit position == 9 --> no field to the right */
-            if player.own_board[input] != types::SubField::Water || (input % 10) == 9 {
-                return Err("Invalid position for this ship, please choose another coordinate."
-                    .to_string())
+            if player.own_board[input] != types::SubField::Water
+                || ((input % 10) == 9 && i != ship.size - 1) {
+                    return Err("Invalid position for this ship, please choose another coordinate."
+                        .to_string())
             }
-            indices.push(input);
+            indices.push(input + 1);
         }
     }
 
