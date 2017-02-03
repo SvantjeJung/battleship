@@ -8,6 +8,7 @@ mod server;
 mod view;
 
 use clap::AppSettings;
+use model::helper;
 
 const BOARD_SIZE: u8 = 10;
 
@@ -60,7 +61,7 @@ fn main() {
             if let Some(val) = server_args.value_of("size") {
                 match val.parse::<u8>() {
                     Ok(val) => size = val,
-                    Err(_) => size = read_usize() as u8,
+                    Err(_) => size = helper::read_usize() as u8,
                 }
             }
 
@@ -110,31 +111,6 @@ fn main() {
     println!("");
 }
 
-/// Reads a string from the terminal/user.
-fn read_string() -> String {
-    use std::io::stdin;
-    let mut buffer = String::new();
-    stdin()
-        .read_line(&mut buffer)
-        .expect("something went horribly wrong...");
-
-    // Discard trailing newline
-    let new_len = buffer.trim_right().len();
-    buffer.truncate(new_len);
-
-    buffer
-}
-
-/// Reads a valid `usize` integer from the terminal/user.
-fn read_usize() -> usize {
-    loop {
-        match read_string().parse::<usize>() {
-            Ok(res) => return res,
-            Err(_) => println!("That was not an unsigned integer! Please try again!"),
-        }
-    }
-}
-
 /// Validate port
 /// Only allow usage of ports 1024 up to 65535
 fn validate_port(p: &str) -> u16 {
@@ -142,14 +118,14 @@ fn validate_port(p: &str) -> u16 {
         Ok(p) => p,
         Err(_) => {
             println!("Please enter a valid port (1024-65535): ");
-            read_usize() as u16
+            helper::read_usize() as u16
         },
     };
 
     loop {
         if port < 1024 {
             println!("Please enter a valid port (1024-65535): ");
-            port = read_usize() as u16;
+            port = helper::read_usize() as u16;
         } else {
             break;
         }

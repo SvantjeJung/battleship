@@ -1,8 +1,8 @@
 use term_painter::ToStyle;
 use term_painter::Color::*;
-use std::io;
 
-mod types;
+pub mod types;
+pub mod helper;
 
 // Game logic (board, initialization, valid move, set, play or finished)
 
@@ -14,8 +14,7 @@ fn print_boards(board1: &Vec<types::SubField>, board2: &Vec<types::SubField>) {
     let mut cnt = 9;
 
     for i in 0..10 {
-        println!("");
-        print!("{}  ", cnt);
+        print!("\n{0:<width$}", cnt, width=3);
         for j in 0..10 {
             if board1[j + i * 10] == types::SubField::Hit {
                 print!(" {} ", Red.paint(board1[j + i * 10]));
@@ -43,20 +42,6 @@ fn print_boards(board1: &Vec<types::SubField>, board2: &Vec<types::SubField>) {
         "-------------------------------------------------------------");
 }
 
-/// Reads a string from the terminal / user.
-fn read_string() -> String {
-    let mut buffer = String::new();
-    io::stdin()
-        .read_line(&mut buffer)
-        .expect("something went horribly wrong...");
-
-    /* Discard trailing newline */
-    let new_len = buffer.trim_right().len();
-    buffer.truncate(new_len);
-
-    buffer
-}
-
 /// The actual placement of the ships.
 fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), String> {
 
@@ -76,19 +61,23 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), Strin
         }
     }
 
-    println!("{}{}", "Enter 'h' for a horizontal (upwards) orientation of the ship,",
-        "'v' for a vertical (rightwards) one.");
-    /* x --> invalid value */
-    let mut orientation = "x".to_string();
-    while orientation == "x" {
-        orientation = read_string();
-        if orientation != "h" && orientation != "v" {
-            println!("Invalid input, again please.");
-            orientation = "x".to_string();
-        }
-    }
+    println!(
+    "Enter 'h' for a horizontal (rightwards) orientation of the ship, 
+    'v' for a vertical (upwards) one."
+    );
 
-    if orientation == "v" {
+    let mut ori = helper::read_string();  
+    loop { 
+        match ori.as_str() {
+            "h" | "v" => break,
+            _ => { 
+                println!("Invalid input, again please.");
+                ori = helper::read_string();
+            }
+        }   
+    } 
+
+    if ori == "v" {
         for _ in 0..ship.size - 1 {
             /* Check to prevent out of bounds errors. */
             if input >= 10 {
@@ -129,18 +118,16 @@ fn place_ships(mut player1: &mut types::Player, mut player2: &mut types::Player)
 
     /* A vector of all the ships each player needs to place.
        The default version: #  Class of ship Size
-                            1   Carrier       5
-                            2   Battleship    4
-                            3   Cruiser       3
-                            4   Submarine     3
-                            5   Destroyer     2
+                            4   Submarine     2
+                            3   Destroyer     3
+                            2   Cruiser       4
+                            1   Battleship    5
     */
-    let s1 = types::ShipType{ name: "Carrier".to_string(), size: 5, amount: 1 };
-    let s2 = types::ShipType{ name: "Battleship".to_string(), size: 4, amount: 2 };
-    let s3 = types::ShipType{ name: "Cruiser".to_string(), size: 3, amount: 3 };
-    let s4 = types::ShipType{ name: "Submarine".to_string(), size: 3, amount: 4 };
-    let s5 = types::ShipType{ name: "Destroyer".to_string(), size: 2, amount: 5 };
-    let ships = vec![s1, s2, s3, s4, s5];
+    let s1 = types::ShipType{ name: "Submarine".to_string(), size: 2, amount: 4 };
+    let s2 = types::ShipType{ name: "Destroyer".to_string(), size: 3, amount: 3 };
+    let s3 = types::ShipType{ name: "Cruiser".to_string(), size: 4, amount: 2 };
+    let s4 = types::ShipType{ name: "Battleship".to_string(), size: 5, amount: 1 };
+    let ships = vec![s1, s2, s3, s4];
 
     print_boards(&player1.own_board, &player1.op_board);
 
@@ -185,7 +172,7 @@ fn get_input() -> usize {
     let mut input = 100;
 
     while input == 100 {
-        input = match read_string().as_ref() {
+        input = match helper::read_string().as_ref() {
             "A0" => 90, "A1" => 80,"A2" => 70, "A3" => 60, "A4" => 50,
             "A5" => 40, "A6" => 30, "A7" => 20, "A8" => 10, "A9" => 0,
             "B0" => 91, "B1" => 81, "B2" => 71, "B3" => 61, "B4" => 51,
