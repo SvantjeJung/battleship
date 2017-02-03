@@ -78,23 +78,24 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), Strin
     if ori == "v" {
         for i in 0..ship.size - 1 {
             /* input < 10 --> no field above */
-            println!("{}", input);
             if player.own_board[input] != types::SubField::Water
-                || (input < 10 && i != ship.size - 1) {
+                || input < 10 && i != ship.size - 1 {
                     return Err("Invalid position for this ship, please choose another coordinate."
                         .to_string())
             }
-            indices.push(input - 10);
+            input -= 10;
+            indices.push(input);
         }
     } else {
         for i in 0..ship.size - 1 {
             /* unit position == 9 --> no field to the right */
             if player.own_board[input] != types::SubField::Water
-                || ((input % 10) == 9 && i != ship.size - 1) {
+                || (input % 10) == 9 && i != ship.size - 1 {
                     return Err("Invalid position for this ship, please choose another coordinate."
                         .to_string())
             }
-            indices.push(input + 1);
+            input += 1;
+            indices.push(input);
         }
     }
 
