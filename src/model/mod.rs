@@ -44,11 +44,11 @@ fn print_boards(board1: &Vec<types::SubField>, board2: &Vec<types::SubField>) {
 
 /* Determines whether the chosen field is a valid one. Considers the
    Moore neighborhood because the ships shouldn't collide. */
-fn valid_field(player: &types::Player, input: usize, ori: &String) -> bool {
+fn valid_field(player: &types::Player, input: usize, ori: &str) -> bool {
 
     let mut valid = false;
 
-    match ori.as_str() {
+    match ori {
         "v" => {
             /* Last part of the ship - the right-hand side needs to be free. */
             if input == 0 {
