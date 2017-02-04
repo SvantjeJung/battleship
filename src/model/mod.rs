@@ -98,7 +98,7 @@ fn valid_field(player: &types::Player, input: usize, ori: &String) -> bool {
                 {
                     valid = true;
                 }
-            }          
+            }
         },
         "h" => {
             /* Last part of the ship - the field upwards needs to be free. */
@@ -286,7 +286,7 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), Strin
             } else {
                 input_as_int -= 10;
             }
-            
+
             /* input < 10 --> no field above */
             if input_as_int < 0 && i != ship.size - 1 || !valid_field(&player, input, &ori) {
                 return Err("Invalid position for this ship, please choose another coordinate."
