@@ -42,6 +42,203 @@ fn print_boards(board1: &Vec<types::SubField>, board2: &Vec<types::SubField>) {
         "-------------------------------------------------------------");
 }
 
+/* Determines whether the chosen field is a valid one. Considers the
+   Moore neighborhood because the ships shouldn't collide. */
+fn valid_field(player: &types::Player, input: usize, ori: &String) -> bool {
+
+    let mut valid = false;
+
+    match ori.as_str() {
+        "v" => {
+            /* Last part of the ship - the right-hand side needs to be free. */
+            if input == 0 {
+                if player.own_board[input] == types::SubField::Water
+                    && player.own_board[input + 1] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            /* Last part of the ship - the left-hand side needs to be free. */
+            } else if input == 9 {
+                if player.own_board[input] == types::SubField::Water
+                    && player.own_board[input - 1] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            /* Last part of the ship - the right-hand and left-hand sides need to be free. */
+            } else if input < 10 {
+                if player.own_board[input] == types::SubField::Water
+                    && player.own_board[input + 1] == types::SubField::Water
+                    && player.own_board[input - 1] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            /* The left column except 0. */
+            } else if input % 10 == 0 {
+                if player.own_board[input] == types::SubField::Water
+                    && player.own_board[input + 1] == types::SubField::Water
+                    &&player.own_board[input - 10] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            /* The right column except 9. */
+            } else if input % 10 == 9 {
+                if player.own_board[input] == types::SubField::Water
+                    && player.own_board[input - 1] == types::SubField::Water
+                    && player.own_board[input - 10] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            /* The ordinary rest of the fields. A downwards collision is
+               allowed since it is the same ship. */
+            } else {
+                if player.own_board[input] == types::SubField::Water
+                    && player.own_board[input + 1] == types::SubField::Water
+                    && player.own_board[input - 1] == types::SubField::Water
+                    && player.own_board[input - 10] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            }          
+        },
+        "h" => {
+            /* Last part of the ship - the field upwards needs to be free. */
+            if input == 99 {
+                if player.own_board[input] == types::SubField::Water
+                   && player.own_board[input - 10] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            /* Last part of the ship - the field downwards needs to be free. */
+            } else if input == 9 {
+                if player.own_board[input] == types::SubField::Water
+                   && player.own_board[input + 10] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            /* The bottom line except 99. */
+            } else if input / 10 == 9 {
+                if player.own_board[input] == types::SubField::Water
+                    && player.own_board[input + 1] == types::SubField::Water
+                    && player.own_board[input - 10] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            /* The top line except 9. */
+            } else if input < 10 {
+                if player.own_board[input] == types::SubField::Water
+                    && player.own_board[input + 1] == types::SubField::Water
+                    && player.own_board[input + 10] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            /* The right column except 99 and 9. */
+            } else if input % 10 == 9 {
+                if player.own_board[input] == types::SubField::Water
+                    && player.own_board[input - 10] == types::SubField::Water
+                    && player.own_board[input + 10] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            /* The ordinary rest of the fields. The left-hand side is allowed
+               to be occupied since it is the same ship. */
+            } else {
+                if player.own_board[input] == types::SubField::Water
+                    && player.own_board[input + 1] == types::SubField::Water
+                    && player.own_board[input - 10] == types::SubField::Water
+                    && player.own_board[input + 10] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            }
+        },
+        _ => {
+            /* The first part of the ship needs to be fully surrounded by water.
+               Checks the Moore neighborhood. */
+            /* The top-left corner. */
+            if input == 0 {
+                if player.own_board[input] == types::SubField::Water
+                    && player.own_board[input + 1] == types::SubField::Water
+                    && player.own_board[input + 10] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            /* The top-right corner. */
+            } else if input == 9 {
+                if player.own_board[input] == types::SubField::Water
+                    && player.own_board[input - 1] == types::SubField::Water
+                    && player.own_board[input + 10] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            /* The bottom-right corner. */
+            } else if input == 99 {
+                if player.own_board[input] == types::SubField::Water
+                    && player.own_board[input - 1] == types::SubField::Water
+                    && player.own_board[input - 10] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            /* The bottom-left corner. */
+            } else if input == 90 {
+                if player.own_board[input] == types::SubField::Water
+                    && player.own_board[input + 1] == types::SubField::Water
+                    && player.own_board[input - 10] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            /* The bottom line except the corners. */
+            } else if input / 10 == 9 {
+               if player.own_board[input] == types::SubField::Water
+                    && player.own_board[input - 1] == types::SubField::Water
+                    && player.own_board[input + 1] == types::SubField::Water
+                    && player.own_board[input - 10] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            /* The left column except the corners. */
+            } else if input % 10 == 0 {
+                if player.own_board[input] == types::SubField::Water
+                    && player.own_board[input + 1] == types::SubField::Water
+                    && player.own_board[input - 10] == types::SubField::Water
+                    && player.own_board[input + 10] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            /* The right column except the corners. */
+            } else if input % 10 == 9 {
+                if player.own_board[input] == types::SubField::Water
+                    && player.own_board[input - 1] == types::SubField::Water
+                    && player.own_board[input - 10] == types::SubField::Water
+                    && player.own_board[input + 10] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            /* The top line except the corners. */
+            } else if input < 10 {
+                if player.own_board[input] == types::SubField::Water
+                    && player.own_board[input - 1] == types::SubField::Water
+                    && player.own_board[input + 1] == types::SubField::Water
+                    && player.own_board[input + 10] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            /* The ordinary rest of the fields. */
+            } else {
+                if player.own_board[input] == types::SubField::Water
+                    && player.own_board[input - 1] == types::SubField::Water
+                    && player.own_board[input + 1] == types::SubField::Water
+                    && player.own_board[input - 10] == types::SubField::Water
+                    && player.own_board[input + 10] == types::SubField::Water
+                {
+                    valid = true;
+                }
+            }
+        },
+    }
+
+    valid
+}
+
 /// The actual placement of the ships.
 fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), String> {
 
@@ -50,21 +247,24 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), Strin
 
     let mut input = get_input();
     loop {
-        match player.own_board[input] {
-            types::SubField::Water => { indices.push(input); break; },
-            _ => {
-                println!("Invalid input, again please.");
-                input = get_input();
-            },
+        /* The complete Moore neighborhood needs to be free
+           to place the first part of the ship. */
+        if valid_field(&player, input, &"".to_string()) {
+            indices.push(input);
+            break;
+        } else {
+            println!("Invalid input, again please.");
+            input = get_input();
         }
     }
 
     println!(
-    "Enter 'h' for a horizontal (rightwards) orientation of the ship,
-    'v' for a vertical (upwards) one."
+        "Enter 'h' for a horizontal (rightwards) orientation of the ship,
+        'v' for a vertical (upwards) one."
     );
 
     let mut ori = helper::read_string();
+
     loop {
         match ori.as_str() {
             "h" | "v" => break,
@@ -77,24 +277,31 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), Strin
 
     if ori == "v" {
         for i in 0..ship.size - 1 {
-            /* input < 10 --> no field above */
-            if player.own_board[input] != types::SubField::Water
-                || input < 10 && i != ship.size - 1 {
-                    return Err("Invalid position for this ship, please choose another coordinate."
-                        .to_string())
+
+            let mut input_as_int = input as i32;
+
+            /* To prevent subtraction with overflow. */
+            if input >= 10 {
+                input -= 10;
+            } else {
+                input_as_int -= 10;
             }
-            input -= 10;
+            
+            /* input < 10 --> no field above */
+            if input_as_int < 0 && i != ship.size - 1 || !valid_field(&player, input, &ori) {
+                return Err("Invalid position for this ship, please choose another coordinate."
+                    .to_string())
+            }
             indices.push(input);
         }
     } else {
         for i in 0..ship.size - 1 {
-            /* unit position == 9 --> no field to the right */
-            if player.own_board[input] != types::SubField::Water
-                || (input % 10) == 9 && i != ship.size - 1 {
-                    return Err("Invalid position for this ship, please choose another coordinate."
-                        .to_string())
-            }
             input += 1;
+            /* unit position == 9 --> no field to the right */
+            if (input % 10) == 0 && i != ship.size - 1 || !valid_field(&player, input, &ori) {
+                return Err("Invalid position for this ship, please choose another coordinate."
+                    .to_string())
+            }
             indices.push(input);
         }
     }
