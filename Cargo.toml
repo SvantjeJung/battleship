@@ -10,3 +10,4 @@ authors = [
 
 [dependencies]
 clap = "2.20"
+term-painter = "0.2"
