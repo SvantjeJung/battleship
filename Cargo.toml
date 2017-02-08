@@ -9,5 +9,10 @@ authors = [
 ]
 
 [dependencies]
+bincode = "1.0.0-alpha1"
+bufstream = "0.1"
+chan = "0.1"
 clap = "2.20"
+serde = "0.9"
+serde_derive = "0.9"
 term-painter = "0.2"

@@ -1,14 +1,22 @@
 #[macro_use]
 extern crate clap;
 extern crate term_painter;
+extern crate bincode;
+#[macro_use]
+extern crate serde_derive;
 
 mod client;
 mod model;
 mod server;
 mod view;
 
+use bincode::serde::{serialize_into, deserialize_from, DeserializeError};
 use clap::AppSettings;
 use model::helper;
+use std::net::{TcpStream};
+use std::{time, thread};
+use server::net::{types};
+use std::str;
 
 const BOARD_SIZE: u8 = 10;
 
@@ -22,7 +30,7 @@ fn main() {
             (about: "Server instance for the game")
             (version: crate_version!())
             (author: crate_authors!())
-            (@arg port: +required +takes_value "listening port")
+            (@arg port: +required +takes_value "Connect to <port> on localhost")
             (@arg name: +required +takes_value "Name of player")
             (@arg size: -s --size +takes_value
                 "set N as board dimension => N x N [not yet implemented]"
@@ -48,7 +56,7 @@ fn main() {
         .get_matches();
 
     println!("Welcome to a round of 'battleship'");
-    model::start_round();
+    //model::start_round();
 
     match battleship.subcommand() {
         ("server", Some(server_args)) => {
@@ -70,15 +78,23 @@ fn main() {
             }
 
             println!(
-                "create server-player: '{}' -- listening on port: {} -- {}x{} board",
+                "create server-player: '{}' -- connecting to port: {} -- {}x{} board",
                 name,
                 port,
                 size,
                 size,
             );
 
-            // TODO: create server instance
+            // create server
+            let wait = thread::spawn( || server::init());
+            thread::sleep(time::Duration::from_millis(10));
+
+            // create host player and connect to server
+            //let host = TcpStream::connect((types::LOCALHOST, port)).unwrap();
+            //thread::spawn(move || client::new(name, LOCALHOST, port));
+            wait.join();
         },
+
         ("client", Some(client_args))   => {
             // required arguments
             let ip = client_args.value_of("ip").unwrap();
@@ -93,8 +109,26 @@ fn main() {
                 port,
             );
 
-            // TODO: create client instance
+            // create client instance and connect to server
+            let mut client_connection = TcpStream::connect((ip, port)).unwrap();
+            let client = client::new(name, ip, port);
+
+            loop {
+                //let mut buffer = Vec::new();
+                //let msg = client_connection.read_to_end(&mut buffer);
+                //println!("{}", str::from_utf8(&buffer).unwrap());
+                let recv: Result<types::Message, DeserializeError> =
+                    deserialize_from(&mut client_connection, bincode::SizeLimit::Bounded(200));
+                match recv {
+                    Ok(m) => println!("{:?}: {}", m.msg_type, m.data),
+                    Err(_) => {
+                        println!("ERROR");
+                        break;
+                    },
+                };
+            }
         },
+
         ("single", Some(single_args)) => {
             let name = single_args.value_of("name").unwrap();
 
