@@ -20,6 +20,11 @@ pub enum SubField {
     WaterHit,
 }
 
+pub enum ErrorType {
+    DeadEnd,
+    InvalidField,
+}
+
 pub struct ShipType {
     pub name: String,
     pub size: usize,

@@ -252,7 +252,7 @@ fn remove_idx(rand: usize, vec: &mut Vec<usize>) {
 
 /// Random ship placement for the AI.
 fn place_ai(player: &mut types::Player, ship: &types::ShipType,
-    mut vec: &mut Vec<usize>) -> Result<(), String> {
+    mut vec: &mut Vec<usize>) -> Result<(), types::ErrorType> {
 
     /* Vector to collect the indices for the possible ship position. */
     let mut indices = Vec::new();
@@ -267,8 +267,7 @@ fn place_ai(player: &mut types::Player, ship: &types::ShipType,
            in which the remaining boats can't be placed, so we
            need to restart the whole placement process. */
         if vec.len() == 1 {
-            /* Later replaced by error type. */
-            return Err("dead-end".to_string());
+            return Err(types::ErrorType::DeadEnd);
         } else if valid_field(&player, rand, &"".to_string()) {
             indices.push(rand);
             remove_idx(rand, &mut vec);
@@ -299,8 +298,7 @@ fn place_ai(player: &mut types::Player, ship: &types::ShipType,
             /* last_part --> no field above */
             if last_part && i != ship.size - 1 || !valid_field(&player, rand, "v") {
                 remove_idx(rand, &mut vec);
-                /* Later replaced by error type. */
-                return Err("".to_string())
+                return Err(types::ErrorType::InvalidField)
             }
             indices.push(rand);
         }
@@ -310,8 +308,7 @@ fn place_ai(player: &mut types::Player, ship: &types::ShipType,
             /* unit position == 9 --> no field to the right */
             if (rand % 10) == 0 && i != ship.size - 1 || !valid_field(&player, rand, "h") {
                 remove_idx(rand, &mut vec);
-                /* Later replaced by error type. */
-                return Err("".to_string())
+                return Err(types::ErrorType::InvalidField)
             }
             indices.push(rand);
         }
@@ -326,7 +323,7 @@ fn place_ai(player: &mut types::Player, ship: &types::ShipType,
 }
 
 /// The actual placement of the ships.
-fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), String> {
+fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), types::ErrorType> {
 
     /* Vector to collect the indices for the possible ship position. */
     let mut indices = Vec::new();
@@ -375,8 +372,7 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), Strin
 
             /* last_part --> no field above */
             if last_part && i != ship.size - 1 || !valid_field(&player, input, &ori) {
-                return Err("Invalid position for this ship, please choose another coordinate."
-                    .to_string())
+                return Err(types::ErrorType::InvalidField)
             }
             indices.push(input);
         }
@@ -385,8 +381,7 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), Strin
             input += 1;
             /* unit position == 9 --> no field to the right */
             if (input % 10) == 0 && i != ship.size - 1 || !valid_field(&player, input, &ori) {
-                return Err("Invalid position for this ship, please choose another coordinate."
-                    .to_string())
+                return Err(types::ErrorType::InvalidField)
             }
             indices.push(input);
         }
@@ -416,7 +411,8 @@ fn restart_placement(mut p1: &mut types::Player, mut p2: &mut types::Player, p1_
 }
 
 /// Handles the initial ship placement for each player.
-fn place_ships(mut p1: &mut types::Player, mut p2: &mut types::Player) -> Result<(), String> {
+fn place_ships(mut p1: &mut types::Player, mut p2: &mut types::Player)
+    -> Result<(), types::ErrorType> {
 
     /* A vector of all the ships each player needs to place.
        The default version: #  Class of ship Size
@@ -440,11 +436,19 @@ fn place_ships(mut p1: &mut types::Player, mut p2: &mut types::Player) -> Result
         for i in ships.iter() {
             for _ in 0..i.amount {
                 loop {
-                    println!("{}, please enter the first coordinate for your {:?} ({} fields).",
-                        p1.name, i.name, i.size);
+                    println!("{}, please enter the first coordinate for your {:?} ({}{}",
+                        p2.name, i.name, i.size, " fields).");
                     match place(&mut p1, i) {
                         Ok(_) => { break; },
-                        Err(e) => { println!("{}", e); },
+                        Err(e) => {
+                            match e {
+                                types::ErrorType::InvalidField => {
+                                    println!("Invalid position for this ship, {}",
+                                        "please choose another coordinate.");
+                                },
+                                types::ErrorType::DeadEnd => {},
+                            }
+                        },
                     }
                 }
                 p1.capacity += i.size;
@@ -467,11 +471,19 @@ fn place_ships(mut p1: &mut types::Player, mut p2: &mut types::Player) -> Result
                 if p2.player_type == types::PlayerType::Human {
                     print_boards(&p2.own_board, &p2.op_board);
                     loop {
-                        println!("{}, please enter the first coordinate for your {:?} ({} fields).",
-                            p2.name, i.name, i.size);
+                        println!("{}, please enter the first coordinate for your {:?} ({}{}",
+                            p2.name, i.name, i.size, " fields).");
                         match place(&mut p2, i) {
                             Ok(_) => { break; },
-                            Err(e) => { println!("{}", e); },
+                            Err(e) => {
+                                match e {
+                                    types::ErrorType::InvalidField => {
+                                        println!("Invalid position for this ship, {}",
+                                            "please choose another coordinate.");
+                                    },
+                                    types::ErrorType::DeadEnd => {},
+                                }
+                            },
                         }
                     }
                     print_boards(&p2.own_board, &p2.op_board);
@@ -481,8 +493,9 @@ fn place_ships(mut p1: &mut types::Player, mut p2: &mut types::Player) -> Result
                         match place_ai(&mut p2, i, &mut vec) {
                             Ok(_) => { break; },
                             Err(e) => {
-                                if e == "dead-end" {
-                                    return Err("dead-end".to_string())
+                                match e {
+                                    types::ErrorType::InvalidField => {},
+                                    types::ErrorType::DeadEnd => {},
                                 }
                             },
                         }
