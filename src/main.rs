@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate clap;
 extern crate term_painter;
+extern crate rand;
 
 mod client;
 mod model;
@@ -8,7 +9,7 @@ mod server;
 mod view;
 
 use clap::AppSettings;
-use model::helper;
+use model::{helper, types};
 
 const BOARD_SIZE: u8 = 10;
 
@@ -48,7 +49,9 @@ fn main() {
         .get_matches();
 
     println!("Welcome to a round of 'battleship'");
-    model::start_round();
+
+    /* Default --> player vs. player */
+    let mut mode = types::Mode::PvP;
 
     match battleship.subcommand() {
         ("server", Some(server_args)) => {
@@ -79,7 +82,7 @@ fn main() {
 
             // TODO: create server instance
         },
-        ("client", Some(client_args))   => {
+        ("client", Some(client_args)) => {
             // required arguments
             let ip = client_args.value_of("ip").unwrap();
             // TODO: check for valid ip-address
@@ -104,10 +107,13 @@ fn main() {
             );
 
             // TODO: create game instance + AI
+            println!("--- Single-Player-Mode ---");
+            mode = types::Mode::Single;
         },
         _ => {}, // Either no subcommand or one not tested for...
     }
 
+    model::start_round(mode);
     println!("");
 }
 
