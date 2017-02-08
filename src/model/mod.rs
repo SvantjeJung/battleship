@@ -287,17 +287,17 @@ fn place_ai(player: &mut types::Player, ship: &types::ShipType,
     if ori {
         for i in 0..ship.size - 1 {
 
-            let mut rand_as_int = rand as i32;
+            let mut last_part = false;
 
             /* To prevent subtraction with overflow. */
             if rand >= 10 {
                 rand -= 10;
             } else {
-                rand_as_int -= 10;
+                last_part = true;
             }
 
-            /* rand < 10 --> no field above */
-            if rand_as_int < 0 && i != ship.size - 1 || !valid_field(&player, rand, "v") {
+            /* last_part --> no field above */
+            if last_part && i != ship.size - 1 || !valid_field(&player, rand, "v") {
                 remove_idx(rand, &mut vec);
                 /* Later replaced by error type. */
                 return Err("".to_string())
@@ -364,17 +364,17 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), Strin
     if ori == "v" {
         for i in 0..ship.size - 1 {
 
-            let mut input_as_int = input as i32;
+            let mut last_part = false;
 
             /* To prevent subtraction with overflow. */
             if input >= 10 {
                 input -= 10;
             } else {
-                input_as_int -= 10;
+                last_part = true;
             }
 
-            /* input < 10 --> no field above */
-            if input_as_int < 0 && i != ship.size - 1 || !valid_field(&player, input, &ori) {
+            /* last_part --> no field above */
+            if last_part && i != ship.size - 1 || !valid_field(&player, input, &ori) {
                 return Err("Invalid position for this ship, please choose another coordinate."
                     .to_string())
             }
