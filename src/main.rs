@@ -50,7 +50,7 @@ fn main() {
 
     println!("Welcome to a round of 'battleship'");
 
-    /* Default --> player vs. player */
+    // default --> player vs. player
     let mut mode = types::Mode::PvP;
 
     match battleship.subcommand() {

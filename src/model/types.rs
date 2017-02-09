@@ -36,8 +36,8 @@ pub struct Player {
     pub own_board: Vec<SubField>,
     pub op_board: Vec<SubField>,
     pub player_type: PlayerType,
-    /* The "life" basically - the amount of hits necessary
-       for the opponent to win the game. */
+    // The "life" basically - the amount of hits necessary
+    // for the opponent to win the game.
     pub capacity: usize,
     pub name: String,
 }
