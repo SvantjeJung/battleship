@@ -117,39 +117,65 @@ fn main() {
                 //let mut buffer = Vec::new();
                 //let msg = client_connection.read_to_end(&mut buffer);
                 //println!("{}", str::from_utf8(&buffer).unwrap());
-                let recv: Result<types::Message, DeserializeError> =
-                    deserialize_from(&mut client_connection, bincode::SizeLimit::Bounded(200));
+                let board;
+                let recv: Result<types::MessageType, DeserializeError> =
+                    deserialize_from(&mut client_connection, bincode::SizeLimit::Infinite);
                 match recv {
                     Ok(received) => {
-                        println!("{:?}: {}", received.msg_type, received.data);
-                        match received.msg_type {
-                            MessageType::Welcome => {
+                        println!("RP: {:?}", received);
+                        match received {
+                            MessageType::Welcome(msg) => {
+                                println!("{}", msg);
                                 // send Login data
                                 serialize_into(
                                     &mut client_connection,
-                                    &(types::Message {
-                                        msg_type: types::MessageType::Login,
-                                        data: name.to_string()
-                                    }),
+                                    &(types::MessageType::Login(name.to_string())),
                                     bincode::SizeLimit::Infinite
                                 );
                             },
                             MessageType::Ping => {
                                 // send Ping
+                                serialize_into(
+                                    &mut client_connection,
+                                    &(types::MessageType::Ping),
+                                    bincode::SizeLimit::Infinite
+                                );
                             },
                             MessageType::Quit => {
-                                // server ended conn
+                                println!("Server ended the connection.");
                                 break;
                             },
-                            MessageType::RequestShips => {
+                            MessageType::Board(b) => {
                                 // let client set all its ships
-                                // send board
+                                board = b;
+                                // TODO
+                                model::print_boards(&board, &board);
+                                // board = place(client, ...)
                             },
-                            MessageType::Request => {
+                            MessageType::RequestCoord => {
                                 // send coordinate to shoot
+                                let mut coord;
+                                loop {
+                                    coord = ::helper::read_string();
+                                    if ::model::valid_coordinate(&coord) {
+                                        break;
+                                    }
+                                }
+
+                                serialize_into(
+                                    &mut client_connection,
+                                    &(types::MessageType::Shoot(coord)),
+                                    bincode::SizeLimit::Infinite
+                                );
+                            }
+                            MessageType::RequestBoard => {
+                                // send board
+                            }
+                            MessageType::Unexpected => {
+                                // resend expected packet
                             }
                             _ => {
-                                println!("Unexpected packet received");
+                                println!("Received unexpected packet");
                             }
                         }
                     },

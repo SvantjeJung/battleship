@@ -1,5 +1,7 @@
 // Defining types for the network
 
+use ::model::types::SubField;
+
 ///////////////////////////
 ///     Constants       ///
 ///////////////////////////
@@ -9,18 +11,14 @@ pub const DEFAULT_PORT: u16 = 4200;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum MessageType {
-    Welcome,
     Ping,
     Quit,
-    Request,
-    RequestShips,
-    Login,
-    Shoot,
-    Board,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Message {
-    pub msg_type: MessageType,
-    pub data: String,
+    Ready,
+    RequestBoard,
+    RequestCoord,
+    Unexpected,
+    Login(String),
+    Welcome(String),
+    Shoot(String),
+    Board(Vec<SubField>),
 }

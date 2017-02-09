@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub enum SubField {
     Water,
     Ship,
@@ -14,6 +14,7 @@ pub struct ShipType {
     pub amount: usize,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Player {
     pub own_board: Vec<SubField>,
     pub op_board: Vec<SubField>,

@@ -7,7 +7,7 @@ pub mod helper;
 // Game logic (board, initialization, valid move, set, play or finished)
 
 /// Visualization of the boards.
-fn print_boards(board1: &Vec<types::SubField>, board2: &Vec<types::SubField>) {
+pub fn print_boards(board1: &Vec<types::SubField>, board2: &Vec<types::SubField>) {
     println!("{}{}", "------------------ O W N   B O A R D ------------------",
         "-------------------------- O P P O N E N T ---------------");
 
@@ -374,7 +374,7 @@ fn get_input() -> usize {
 
     while input == 100 {
         input = match helper::read_string().as_ref() {
-            "A0" => 90, "A1" => 80,"A2" => 70, "A3" => 60, "A4" => 50,
+            "A0" => 90, "A1" => 80, "A2" => 70, "A3" => 60, "A4" => 50,
             "A5" => 40, "A6" => 30, "A7" => 20, "A8" => 10, "A9" => 0,
             "B0" => 91, "B1" => 81, "B2" => 71, "B3" => 61, "B4" => 51,
             "B5" => 41, "B6" => 31, "B7" => 21, "B8" => 11, "B9" => 1,
@@ -402,6 +402,53 @@ fn get_input() -> usize {
         }
     }
     input
+}
+
+/// Check if given input is a valid coordinate
+pub fn valid_coordinate(input: &str) -> bool {
+    if input.len() != 2 {
+        return false
+    }
+
+    let lower = input.to_owned().to_lowercase();
+    let mut alpha = false;
+    let mut num = false;
+
+    for c in lower.chars() {
+        if !alpha && !num {
+            if valid_alpha(c) {
+                alpha = true;
+            } else if valid_num(c) {
+                num = true;
+            } else {
+                return false;
+            }
+        } else if !alpha {
+            alpha = valid_alpha(c);
+        } else if !num {
+            num = valid_num(c);
+        } else {
+            return false;
+        }
+    }
+
+    alpha && num
+}
+
+/// Check if given character is of valid alphabetic value
+fn valid_alpha(c: char) -> bool {
+    match c {
+        'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' => true,
+        _ => false,
+    }
+}
+
+/// Check if given character is of valid numeric value
+fn valid_num(c: char) -> bool {
+    match c {
+        '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => true,
+        _ => false,
+    }
 }
 
 /// Determines the type of the SubField that got hit
