@@ -289,8 +289,8 @@ fn place_ai(
     if ori {
         for i in 0..ship.size - 1 {
 
-            // If the result would be negative, checked_sub
-            // returns None and input is set to 101 by unwrap_or().
+            // If the result would be negative, checked_sub()
+            // returns None and input is set to 100 by unwrap_or().
             // In this case, it has to be the last part of the ship
             // because there's no field above.
             rand = rand.checked_sub(10).unwrap_or(100);
@@ -360,8 +360,8 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), types
     if ori == "v" {
         for i in 0..ship.size - 1 {
 
-            // If the result would be negative, checked_sub
-            // returns None and input is set to 101 by unwrap_or().
+            // If the result would be negative, checked_sub()
+            // returns None and input is set to 100 by unwrap_or().
             // In this case, it has to be the last part of the ship
             // because there's no field above.
             input = input.checked_sub(10).unwrap_or(100);
@@ -545,8 +545,11 @@ fn get_input() -> usize {
 
 /// Determines the type of the SubField that got hit
 /// by the current move and sets it accordingly.
-fn match_move(first: &mut types::Player, second: &mut types::Player, idx: usize)
-    -> types::SubField {
+fn match_move(
+    first: &mut types::Player,
+    second: &mut types::Player,
+    idx: usize
+) -> types::SubField {
 
     match second.own_board[idx] {
         types::SubField::Water => {
