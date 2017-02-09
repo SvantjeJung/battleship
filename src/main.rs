@@ -17,6 +17,7 @@ use std::net::{TcpStream};
 use std::{time, thread};
 use server::net::{types};
 use std::str;
+use server::net::types::MessageType;
 
 const BOARD_SIZE: u8 = 10;
 
@@ -62,7 +63,7 @@ fn main() {
         ("server", Some(server_args)) => {
             // required arguments
             let port = validate_port(server_args.value_of("port").unwrap());
-            let name = server_args.value_of("name").unwrap();
+            let name = String::from(server_args.value_of("name").unwrap());
 
             // optional arguments
             let mut size = BOARD_SIZE;
@@ -78,15 +79,14 @@ fn main() {
             }
 
             println!(
-                "create server-player: '{}' -- connecting to port: {} -- {}x{} board",
-                name,
+                "create server-player: '{}' -- connecting to port: {} -- {2}x{2} board",
+                &name,
                 port,
-                size,
                 size,
             );
 
             // create server
-            let wait = thread::spawn( || server::init());
+            let wait = thread::spawn(move || server::init(name, size));
             thread::sleep(time::Duration::from_millis(10));
 
             // create host player and connect to server
@@ -120,12 +120,46 @@ fn main() {
                 let recv: Result<types::Message, DeserializeError> =
                     deserialize_from(&mut client_connection, bincode::SizeLimit::Bounded(200));
                 match recv {
-                    Ok(m) => println!("{:?}: {}", m.msg_type, m.data),
+                    Ok(received) => {
+                        println!("{:?}: {}", received.msg_type, received.data);
+                        match received.msg_type {
+                            MessageType::Welcome => {
+                                // send Login data
+                                serialize_into(
+                                    &mut client_connection,
+                                    &(types::Message {
+                                        msg_type: types::MessageType::Login,
+                                        data: name.to_string()
+                                    }),
+                                    bincode::SizeLimit::Infinite
+                                );
+                            },
+                            MessageType::Ping => {
+                                // send Ping
+                            },
+                            MessageType::Quit => {
+                                // server ended conn
+                                break;
+                            },
+                            MessageType::RequestShips => {
+                                // let client set all its ships
+                                // send board
+                            },
+                            MessageType::Request => {
+                                // send coordinate to shoot
+                            }
+                            _ => {
+                                println!("Unexpected packet received");
+                            }
+                        }
+                    },
                     Err(_) => {
-                        println!("ERROR");
+                        println!("Nothing to read - connection dropped...");
                         break;
                     },
                 };
+
+
             }
         },
 

@@ -12,7 +12,11 @@ pub enum MessageType {
     Welcome,
     Ping,
     Quit,
-    RequestForShips,
+    Request,
+    RequestShips,
+    Login,
+    Shoot,
+    Board,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
