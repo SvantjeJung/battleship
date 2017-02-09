@@ -6,7 +6,7 @@ pub enum Mode {
     Single,
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug)]
 pub enum PlayerType {
     Human,
     DumbAI,

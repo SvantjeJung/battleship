@@ -427,11 +427,12 @@ fn place_ships(mut p1: &mut types::Player, mut p2: &mut types::Player)
     let s4 = types::ShipType{ name: "Battleship".to_string(), size: 5, amount: 1 };
     let ships = vec![s1, s2, s3, s4];
 
-    print_boards(&p1.own_board, &p1.op_board);
-
     /* In a replacement situation for p2,
        p1 doesn't need to place the ships again. */
     if p1.capacity == 0 {
+
+        print_boards(&p1.own_board, &p1.op_board);
+
         /* Asks player1 to place the ships. */
         for i in ships.iter() {
             for _ in 0..i.amount {
@@ -495,7 +496,7 @@ fn place_ships(mut p1: &mut types::Player, mut p2: &mut types::Player)
                             Err(e) => {
                                 match e {
                                     types::ErrorType::InvalidField => {},
-                                    types::ErrorType::DeadEnd => {},
+                                    types::ErrorType::DeadEnd => { return Err(e) },
                                 }
                             },
                         }
@@ -627,7 +628,11 @@ pub fn start_round(mode: types::Mode) {
     loop {
         match place_ships(&mut player1, &mut player2) {
             Ok(_) => { break; },
-            Err(_) => { restart_placement(&mut player1, &mut player2, false); },
+            Err(types::ErrorType::DeadEnd) => {
+                /* DeadEnd --> AI restarts the placement. */
+                restart_placement(&mut player1, &mut player2, false);
+            },
+            Err(_) => {},
         }
     }
 
