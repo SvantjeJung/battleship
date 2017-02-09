@@ -437,7 +437,7 @@ fn place_ships(mut p1: &mut types::Player, mut p2: &mut types::Player)
             for _ in 0..i.amount {
                 loop {
                     println!("{}, please enter the first coordinate for your {:?} ({}{}",
-                        p2.name, i.name, i.size, " fields).");
+                        p1.name, i.name, i.size, " fields).");
                     match place(&mut p1, i) {
                         Ok(_) => { break; },
                         Err(e) => {
@@ -567,6 +567,18 @@ fn match_move(first: &mut types::Player, second: &mut types::Player, idx: usize)
     }
 }
 
+/// Function which provides random moves for the "dumb" ai.
+fn rand_move(mut first: &mut types::Player, mut second: &mut types::Player) {
+    let mut rng = thread_rng();
+    let rand = rng.gen_range(0, 100);
+    match_move(&mut first, &mut second, rand);
+}
+
+/// Function that calculates smart moves for the ai.
+fn smart_move(mut first: &mut types::Player, mut second: &mut types::Player) {
+
+}
+
 /// Lets the players perform their moves.
 fn make_move(mut first: &mut types::Player, mut second: &mut types::Player) {
     if first.player_type == types::PlayerType::Human {
@@ -574,9 +586,7 @@ fn make_move(mut first: &mut types::Player, mut second: &mut types::Player) {
         let input = get_input();
         match_move(&mut first, &mut second, input);
     } else {
-        let mut rng = thread_rng();
-        let rand = rng.gen_range(0, 100);
-        match_move(&mut first, &mut second, rand);
+        rand_move(&mut first, &mut second);
     }
 }
 
@@ -599,12 +609,17 @@ pub fn start_round(mode: types::Mode) {
         name: "Player1".to_string(),
     };
 
+    let mut p2_type = types::PlayerType::Human;
+    if mode == types::Mode::Single {
+        p2_type = types::PlayerType::DumbAI;
+    }
+
     /* Creates the initial (empty) boards (10 x 10) for player2. */
     let mut player2 = types::Player {
         own_board: vec![types::SubField::Water; 100],
         op_board: vec![types::SubField::Water; 100],
         capacity: 0,
-        player_type : types::PlayerType::DumbAI,
+        player_type : p2_type,
         name: "Player2".to_string(),
     };
 

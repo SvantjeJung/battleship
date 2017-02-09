@@ -10,6 +10,7 @@ pub enum Mode {
 pub enum PlayerType {
     Human,
     DumbAI,
+    SmartAI,
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
