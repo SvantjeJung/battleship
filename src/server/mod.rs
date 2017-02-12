@@ -60,6 +60,7 @@ pub fn init(name: String, size: u8) {
     let host = Player {
         own_board: vec![SubField::Water; 100],
         op_board: vec![SubField::Water; 100],
+        player_type: ::model::types::PlayerType::Human,
         name: name,
         capacity: 0,
     };
@@ -67,6 +68,7 @@ pub fn init(name: String, size: u8) {
     let client = Player {
         own_board: vec![SubField::Water; 100],
         op_board: vec![SubField::Water; 100],
+        player_type: ::model::types::PlayerType::Human,
         name: client_name,
         capacity: 0,
     };

@@ -4,6 +4,7 @@ extern crate term_painter;
 extern crate bincode;
 #[macro_use]
 extern crate serde_derive;
+extern crate rand;
 
 mod client;
 mod model;
@@ -13,7 +14,7 @@ mod view;
 use bincode::serde::{serialize_into, deserialize_from, DeserializeError};
 use clap::AppSettings;
 use model::helper;
-use model::types::SubField;
+use model::types::{SubField, Mode};
 use std::net::{TcpStream};
 use std::{time, thread};
 use server::net::{types};
@@ -62,6 +63,9 @@ fn main() {
     println!("Welcome to a round of 'battleship'");
     //model::start_round();
 
+    // default --> player vs. player
+    let mut mode = Mode::PvP;
+
     match battleship.subcommand() {
         ("server", Some(server_args)) => {
             // required arguments
@@ -98,7 +102,7 @@ fn main() {
             wait.join();
         },
 
-        ("client", Some(client_args))   => {
+        ("client", Some(client_args)) => {
             // for testing purpose
             const W: SubField = SubField::Water;
             const S: SubField = SubField::Ship;
@@ -231,10 +235,13 @@ fn main() {
             );
 
             // TODO: create game instance + AI
+            println!("--- Single-Player-Mode ---");
+            mode = Mode::Single;
         },
         _ => {}, // Either no subcommand or one not tested for...
     }
 
+    //model::start_round(mode);
     println!("");
 }
 
