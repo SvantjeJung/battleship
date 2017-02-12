@@ -14,7 +14,7 @@ pub struct ShipType {
     pub amount: usize,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Player {
     pub own_board: Vec<SubField>,
     pub op_board: Vec<SubField>,

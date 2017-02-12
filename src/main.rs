@@ -13,11 +13,14 @@ mod view;
 use bincode::serde::{serialize_into, deserialize_from, DeserializeError};
 use clap::AppSettings;
 use model::helper;
+use model::types::SubField;
 use std::net::{TcpStream};
 use std::{time, thread};
 use server::net::{types};
 use std::str;
 use server::net::types::MessageType;
+use term_painter::ToStyle;
+use term_painter::Color::*;
 
 const BOARD_SIZE: u8 = 10;
 
@@ -96,6 +99,22 @@ fn main() {
         },
 
         ("client", Some(client_args))   => {
+            // for testing purpose
+            const W: SubField = SubField::Water;
+            const S: SubField = SubField::Ship;
+            let testboard = vec![
+                W,W,S,S,S,S,S,W,W,S,
+                W,W,W,W,W,W,W,W,W,S,
+                W,S,W,S,S,S,W,W,W,S,
+                W,S,W,W,W,W,W,W,W,W,
+                W,S,W,S,W,S,S,W,W,S,
+                W,S,W,S,W,W,W,W,W,S,
+                W,W,W,W,W,W,W,W,W,W,
+                W,W,W,W,W,W,S,S,S,S,
+                W,S,S,S,W,W,W,W,W,W,
+                W,W,W,W,W,W,S,S,W,W,
+            ];
+
             // required arguments
             let ip = client_args.value_of("ip").unwrap();
             // TODO: check for valid ip-address
@@ -113,19 +132,21 @@ fn main() {
             let mut client_connection = TcpStream::connect((ip, port)).unwrap();
             let client = client::new(name, ip, port);
 
+            let mut host_name = "SERVER".to_string();
             loop {
                 //let mut buffer = Vec::new();
                 //let msg = client_connection.read_to_end(&mut buffer);
                 //println!("{}", str::from_utf8(&buffer).unwrap());
-                let board;
                 let recv: Result<types::MessageType, DeserializeError> =
                     deserialize_from(&mut client_connection, bincode::SizeLimit::Infinite);
                 match recv {
                     Ok(received) => {
                         println!("RP: {:?}", received);
+                        // process_message(received);
                         match received {
-                            MessageType::Welcome(msg) => {
+                            MessageType::Welcome(msg, host) => {
                                 println!("{}", msg);
+                                host_name = host;
                                 // send Login data
                                 serialize_into(
                                     &mut client_connection,
@@ -146,36 +167,48 @@ fn main() {
                                 break;
                             },
                             MessageType::Board(b) => {
-                                // let client set all its ships
-                                board = b;
                                 // TODO
-                                model::print_boards(&board, &board);
+                                model::print_boards(&b, &vec![SubField::Water; 100]);
                                 // board = place(client, ...)
                             },
                             MessageType::RequestCoord => {
+                                print!("It's your turn! ");
                                 // send coordinate to shoot
                                 let mut coord;
                                 loop {
+                                    println!("Please enter a valid coordinate: ");
                                     coord = ::helper::read_string();
                                     if ::model::valid_coordinate(&coord) {
                                         break;
                                     }
+                                    print!("{}", Red.paint("Invalid coordinate! "));
                                 }
 
-                                serialize_into(
-                                    &mut client_connection,
-                                    &(types::MessageType::Shoot(coord)),
-                                    bincode::SizeLimit::Infinite
-                                );
+                                server::net::send(&mut client_connection, MessageType::Shoot(coord));
                             }
                             MessageType::RequestBoard => {
+                                // let client set all its ships
+                                loop {
+                                    // while not all ships set
+                                    break;
+                                }
                                 // send board
+                                server::net::send_board(&mut client_connection, &testboard);
+                            }
+                            MessageType::TurnHost => {
+                                println!("Wait for {} to finish turn!", Yellow.paint(&host_name));
+                            }
+                            MessageType::Lost => {
+                                println!("{}", Yellow.paint("You lost the game :("));
+                            }
+                            MessageType::Won => {
+                                println!("{}", Yellow.paint("Congratulations, you won the game :)"));
                             }
                             MessageType::Unexpected => {
                                 // resend expected packet
                             }
                             _ => {
-                                println!("Received unexpected packet");
+                                println!("{}", Red.paint("Received unexpected packet"));
                             }
                         }
                     },
@@ -225,4 +258,8 @@ fn validate_port(p: &str) -> u16 {
         }
     }
     port
+}
+
+fn process_message(msg: server::net::types::MessageType) {
+
 }

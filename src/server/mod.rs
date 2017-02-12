@@ -7,6 +7,8 @@ use self::net::types;
 use self::net::types::{MessageType};
 use std::net::{TcpListener, TcpStream};
 //use std::thread;
+use term_painter::ToStyle;
+use term_painter::Color::*;
 
 extern crate chan;
 extern crate rand;
@@ -27,7 +29,7 @@ pub fn init(name: String, size: u8) {
     // welcome client
     serialize_into(
         &mut client_stream,
-        &(types::MessageType::Welcome("Willkommen".to_string())),
+        &(types::MessageType::Welcome("Willkommen".to_string(), name.clone())),
         bincode::SizeLimit::Infinite
     );
 
@@ -75,75 +77,150 @@ pub fn init(name: String, size: u8) {
     println!("Bye.");
 }
 
-fn start(host: Player, client: Player, mut stream: TcpStream) {
-    // ask for ship placements, simultaneously
-    // wait for both threads to end
-    //let wait_for_client = thread::spawn();
-    //wait.join();
-    serialize_into(
-        &mut stream,
-        &(types::MessageType::Board(client.own_board.clone())),
-        bincode::SizeLimit::Infinite
-    );
+fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
+    // for testing purpose
+    const W: SubField = SubField::Water;
+    const S: SubField = SubField::Ship;
+    let testboard = vec![
+        W,W,S,S,S,S,S,W,W,S,
+        W,W,W,W,W,W,W,W,W,S,
+        W,S,W,S,S,S,W,W,W,S,
+        W,S,W,W,W,W,W,W,W,W,
+        W,S,W,S,W,S,S,W,W,S,
+        W,S,W,S,W,W,W,W,W,S,
+        W,W,W,W,W,W,W,W,W,W,
+        W,W,W,W,W,W,S,S,S,S,
+        W,S,S,S,W,W,W,W,W,W,
+        W,W,W,W,W,W,S,S,W,W,
+    ];
 
-    // Just testing Coordinate Request and Receive ...
-    serialize_into(
-        &mut stream,
-        &(types::MessageType::RequestCoord),
-        bincode::SizeLimit::Infinite
-    );
-    let recv: Result<types::MessageType, DeserializeError> =
-    deserialize_from(&mut stream, bincode::SizeLimit::Infinite);
-    let coordinate = match recv {
-        Ok(received) => {
-            println!("RP: {:?}", received);
-            match received {
-                MessageType::Shoot(coord) => {
-                    coord
-                },
-                _ => {
-                    // unexpected packet
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    ///                    Request initial board configuration from host                        ///
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    println!("Please set your ships: ");
+    // TODO modify model::place()
+    println!("{}", Red.paint("TODO implement!"));
+    host.own_board = testboard;
 
-                    "".to_string()
-                },
-            }
-        },
-        Err(_) => {
-            println!("ERROR");
-            "".to_string()
-        },
-    };
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    ///                    Request initial board configuration from client                      ///
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    net::send(&mut stream, MessageType::RequestBoard);
 
-    // choose start player
+    loop {
+        let recv: Result<types::MessageType, DeserializeError> =
+        deserialize_from(&mut stream, bincode::SizeLimit::Infinite);
+        match recv {
+            Ok(received) => {
+                println!("RP: {:?}", received);
+                match received {
+                    MessageType::Board(vec) => {
+                        client.own_board = vec;
+                        break;
+                    },
+                    _ => continue,
+                }
+            },
+            Err(_) => {
+                println!("ERROR");
+                "".to_string();
+                continue
+            },
+        };
+    }
+
+    net::send(&mut stream, MessageType::Board(client.own_board.clone()));
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    ///                             Choose random start player                                  ///
+    ///////////////////////////////////////////////////////////////////////////////////////////////
     let current_player = match choose_player(&host, &client).name == host.name {
         true => CurrentPlayer::Host,
         false => CurrentPlayer::Client,
     };
     println!("Starting player: {:?}", current_player);
 
-    // while game not ended: take turn
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    ///                             Take turns while not ended                                  ///
+    ///////////////////////////////////////////////////////////////////////////////////////////////
     loop {
         match current_player {
             CurrentPlayer::Host => {
                 // inform Client that its the turn of Host
+                net::send(&mut stream, MessageType::TurnHost);
+
                 // wait for input from Host
+                println!("It's your turn!");
+                let mut coord;
+                loop {
+                    println!("Please enter a valid coordinate: ");
+                    coord = ::helper::read_string();
+                    if ::model::valid_coordinate(&coord) {
+                        break;
+                    }
+                    print!("{}", Red.paint("Invalid coordinate! "));
+                }
                 // modify boards
                 // send client.own_board to Client + plus message which Field was Hit/Miss
                 // match Hit | Miss | Destroyed
                 // if Host won: send message to Client, end game
+                if ::model::game_over(&client) {
+                    net::send(&mut stream, MessageType::Lost);
+                    println!("{}", Yellow.paint("Congratulations, you won the game :)"));
+                    break;
+                }
+
+                // TODO delete break
+
                 break;
             }
             CurrentPlayer::Client => {
                 // inform Client that its his turn
+                net::send(&mut stream, MessageType::RequestCoord);
                 // wait for input from Client
+                let recv: Result<types::MessageType, DeserializeError> =
+                    deserialize_from(&mut stream, bincode::SizeLimit::Infinite);
+                let coordinate = match recv {
+                    Ok(received) => {
+                        println!("RP: {:?}", received);
+                        match received {
+                            MessageType::Shoot(coord) => {
+                                coord
+                            },
+                            _ => {
+                                // unexpected packet
+
+                                "".to_string()
+                            },
+                        }
+                    },
+                    Err(_) => {
+                        println!("ERROR");
+                        "".to_string()
+                    },
+                };
+
                 // modify boards
                 // send client.op_board to Client + message which Field Hit/Miss
                 // match Hit | Miss | Destroyed
+
                 // if Client won: send message to Client, end game
+                if ::model::game_over(&host) {
+                    net::send(&mut stream, MessageType::Won);
+                    println!("{}", Yellow.paint("You lost :("));
+                    break;
+                }
+
+                // TODO delete break
                 break;
             }
         }
     }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    ///                                 Quit game                                               ///
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    net::send(&mut stream, MessageType::Quit);
 }
 
 /// Randomly choose host or client player to start guessing
