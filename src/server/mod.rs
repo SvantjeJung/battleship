@@ -124,7 +124,8 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
             Ok(received) => {
                 match received {
                     MessageType::Board(vec) => {
-                        client.own_board = vec;
+                        client.own_board = vec.clone();
+                        client.capacity = Board::targets(&vec);
                         break;
                     },
                     MessageType::Quit => {
