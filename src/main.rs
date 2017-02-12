@@ -134,7 +134,13 @@ fn main() {
 
             // create client instance and connect to server
             let mut client_connection = TcpStream::connect((ip, port)).unwrap();
-            let client = client::new(name, ip, port);
+            let mut client = ::model::types::Player {
+                own_board: ::model::types::Board::init(),
+                op_board: ::model::types::Board::init(),
+                player_type: ::model::types::PlayerType::Human,
+                capacity: 30,
+                name: name.to_string(),
+            };
 
             let mut host_name = "SERVER".to_string();
             loop {
@@ -189,18 +195,58 @@ fn main() {
                                 }
 
                                 server::net::send(&mut client_connection, MessageType::Shoot(coord));
+
+                                // receive updated opponent board
+                                let result: Result<types::MessageType, DeserializeError> =
+                                    deserialize_from(&mut client_connection, bincode::SizeLimit::Infinite);
+                                match result {
+                                    Ok(res) => {
+                                        match res {
+                                            MessageType::Hit(id) => {
+                                                println!("Yay, hit a ship!");
+                                                client.op_board[id] = SubField::Hit;
+                                            }
+                                            MessageType::Miss(id) => {
+                                                println!("Miss :(");
+                                                client.op_board[id] = SubField::Miss;
+                                            }
+                                            _ => {}
+                                        }
+                                    }
+                                    Err(_) => println!("Did not receive Hit or Miss message.")
+                                }
+                                ::model::print_boards(&client.own_board, &client.op_board);
                             }
                             MessageType::RequestBoard => {
                                 // let client set all its ships
                                 loop {
+                                    client.own_board = testboard.clone();
                                     // while not all ships set
                                     break;
                                 }
                                 // send board
-                                server::net::send_board(&mut client_connection, &testboard);
+                                server::net::send_board(&mut client_connection, &client.own_board);
                             }
                             MessageType::TurnHost => {
                                 println!("Wait for {} to finish turn!", Yellow.paint(&host_name));
+
+                                let result: Result<types::MessageType, DeserializeError> =
+                                    deserialize_from(&mut client_connection, bincode::SizeLimit::Infinite);
+                                match result {
+                                    Ok(res) => {
+                                        match res {
+                                            MessageType::Hit(id) => {
+                                                client.own_board[id] = SubField::Hit;
+                                            }
+                                            MessageType::Miss(id) => {
+                                                client.own_board[id] = SubField::Miss;
+                                            }
+                                            _ => {}
+                                        }
+                                    }
+                                    Err(_) => println!("Did not receive Hit or Miss message.")
+                                }
+                                ::model::print_boards(&client.own_board, &client.op_board);
                             }
                             MessageType::Lost => {
                                 println!("{}", Yellow.paint("You lost the game :("));

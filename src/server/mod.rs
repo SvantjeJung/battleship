@@ -2,7 +2,7 @@ pub mod net;
 use ::bincode::serde::{serialize_into, deserialize_from, DeserializeError};
 use ::bincode;
 use ::model::{helper};
-use ::model::types::{Player, SubField};
+use ::model::types::{Board, Player, SubField};
 use self::net::types;
 use self::net::types::{MessageType};
 use std::net::{TcpListener, TcpStream};
@@ -62,7 +62,7 @@ pub fn init(name: String, size: u8) {
         op_board: vec![SubField::Water; 100],
         player_type: ::model::types::PlayerType::Human,
         name: name,
-        capacity: 0,
+        capacity: 30,
     };
 
     let client = Player {
@@ -70,7 +70,7 @@ pub fn init(name: String, size: u8) {
         op_board: vec![SubField::Water; 100],
         player_type: ::model::types::PlayerType::Human,
         name: client_name,
-        capacity: 0,
+        capacity: 30,
     };
 
     // start game
@@ -136,7 +136,7 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
     ///////////////////////////////////////////////////////////////////////////////////////////////
     ///                             Choose random start player                                  ///
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    let current_player = match choose_player(&host, &client).name == host.name {
+    let mut current_player = match choose_player(&host, &client).name == host.name {
         true => CurrentPlayer::Host,
         false => CurrentPlayer::Client,
     };
@@ -163,18 +163,28 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                     print!("{}", Red.paint("Invalid coordinate! "));
                 }
                 // modify boards
-                // send client.own_board to Client + plus message which Field was Hit/Miss
-                // match Hit | Miss | Destroyed
+                let coord_id = Board::get_index(&coord);
+                match ::model::match_move(&mut host, &mut client, coord_id) {
+                    SubField::Hit => {
+                        println!("Hit a ship!");
+                        net::send(&mut stream, MessageType::Hit(coord_id));
+                        ::model::print_boards(&host.own_board, &host.op_board);
+                    }
+                    SubField::Miss => {
+                        println!("Unfortunately a miss.");
+                        net::send(&mut stream, MessageType::Miss(coord_id));
+                        ::model::print_boards(&host.own_board, &host.op_board);
+                        current_player = CurrentPlayer::Client;
+                    }
+                    _ => {}
+                }
+
                 // if Host won: send message to Client, end game
                 if ::model::game_over(&client) {
                     net::send(&mut stream, MessageType::Lost);
                     println!("{}", Yellow.paint("Congratulations, you won the game :)"));
                     break;
                 }
-
-                // TODO delete break
-
-                break;
             }
             CurrentPlayer::Client => {
                 // inform Client that its his turn
@@ -191,7 +201,6 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                             },
                             _ => {
                                 // unexpected packet
-
                                 "".to_string()
                             },
                         }
@@ -203,8 +212,21 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                 };
 
                 // modify boards
-                // send client.op_board to Client + message which Field Hit/Miss
-                // match Hit | Miss | Destroyed
+                let coord_id = Board::get_index(&coordinate);
+                match ::model::match_move(&mut client, &mut host, coord_id) {
+                    SubField::Hit => {
+                        println!("{} hit one of your ships!", client.name);
+                        net::send(&mut stream, MessageType::Hit(coord_id));
+                        ::model::print_boards(&host.own_board, &host.op_board);
+                    }
+                    SubField::Miss => {
+                        println!("{} missed your ships.", client.name);
+                        net::send(&mut stream, MessageType::Miss(coord_id));
+                        ::model::print_boards(&host.own_board, &host.op_board);
+                        current_player = CurrentPlayer::Host;
+                    }
+                    _ => {}
+                }
 
                 // if Client won: send message to Client, end game
                 if ::model::game_over(&host) {
@@ -212,9 +234,6 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                     println!("{}", Yellow.paint("You lost :("));
                     break;
                 }
-
-                // TODO delete break
-                break;
             }
         }
     }

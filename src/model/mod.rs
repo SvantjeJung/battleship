@@ -592,23 +592,23 @@ fn valid_num(c: char) -> bool {
 
 /// Determines the type of the SubField that got hit
 /// by the current move and sets it accordingly.
-fn match_move(
-    first: &mut types::Player,
-    second: &mut types::Player,
+pub fn match_move(
+    attacker: &mut types::Player,
+    opponent: &mut types::Player,
     idx: usize
 ) -> types::SubField {
 
-    match second.own_board[idx] {
+    match opponent.own_board[idx] {
         types::SubField::Water => {
             println!("Miss - try again.");
-            first.op_board[idx] = types::SubField::Miss;
+            attacker.op_board[idx] = types::SubField::Miss;
             return types::SubField::Miss
         },
         types::SubField::Ship => {
             println!("Hit!");
-            first.op_board[idx] = types::SubField::Hit;
-            second.own_board[idx] = types::SubField::Hit;
-            second.capacity -= 1;
+            attacker.op_board[idx] = types::SubField::Hit;
+            opponent.own_board[idx] = types::SubField::Hit;
+            opponent.capacity -= 1;
             return types::SubField::Hit
         },
         types::SubField::Hit => {
