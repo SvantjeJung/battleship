@@ -1,14 +1,14 @@
+use ::util;
 use term_painter::ToStyle;
 use term_painter::Color::*;
 use rand::{thread_rng, Rng};
 
 pub mod types;
-pub mod helper;
 
 // Game logic (board, initialization, valid move, set, play or finished)
 
 /// Visualization of the boards.
-pub fn print_boards(board1: &Vec<types::SubField>, board2: &Vec<types::SubField>) {
+fn print(board1: &Vec<types::SubField>, board2: &Vec<types::SubField>) {
     println!("\n{}{}", "------------------ O W N   B O A R D ------------------",
         "-------------------------- O P P O N E N T ---------------");
 
@@ -42,6 +42,12 @@ pub fn print_boards(board1: &Vec<types::SubField>, board2: &Vec<types::SubField>
     println!("{}{}", "----------------------------------------------------",
         "-------------------------------------------------------------");
     println!("");
+}
+
+/// Print boards of player
+/// Encapsulates print_boards(board1, board2)
+pub fn print_boards(player: &types::Player) {
+    print(&player.own_board, &player.op_board);
 }
 
 /// Determines whether the chosen field is a valid one. Considers the
@@ -328,7 +334,7 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), types
     // Vector to collect the indices for the possible ship position.
     let mut indices = Vec::new();
 
-    let input = ::helper::read_string();
+    let input = util::read_string();
     let mut idx = types::Board::get_index(&input);
     loop {
         // The complete Moore neighborhood needs to be free
@@ -338,7 +344,7 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), types
             break;
         } else {
             println!("Invalid input, again please.");
-            idx = types::Board::get_index(&::helper::read_string());
+            idx = types::Board::get_index(&util::read_string());
         }
     }
 
@@ -347,14 +353,14 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), types
         'v' for a vertical (upwards) one."
     );
 
-    let mut ori = helper::read_string();
+    let mut ori = util::read_string();
 
     loop {
         match ori.as_str() {
             "h" | "v" => break,
             _ => {
                 println!("Invalid input, again please.");
-                ori = helper::read_string();
+                ori = util::read_string();
             }
         }
     }
@@ -423,7 +429,7 @@ pub fn place_ships(mut p1: &mut types::Player)
     // p1 doesn't need to place the ships again.
     if p1.capacity == 0 {
 
-        print_boards(&p1.own_board, &p1.op_board);
+        print_boards(&p1);
 
         // Asks player1 to place the ships.
         for i in ships.iter() {
@@ -445,7 +451,7 @@ pub fn place_ships(mut p1: &mut types::Player)
                     }
                 }
                 p1.capacity += i.size;
-                print_boards(&p1.own_board, &p1.op_board);
+                print_boards(&p1);
             }
         }
     }
@@ -460,7 +466,7 @@ fn get_input() -> usize {
     let mut input = 100;
 
     while input == 100 {
-        input = match helper::read_string().as_ref() {
+        input = match util::read_string().as_ref() {
             "A0" => 90, "A1" => 80, "A2" => 70, "A3" => 60, "A4" => 50,
             "A5" => 40, "A6" => 30, "A7" => 20, "A8" => 10, "A9" => 0,
             "B0" => 91, "B1" => 81, "B2" => 71, "B3" => 61, "B4" => 51,
@@ -664,7 +670,7 @@ pub fn start_round(mode: types::Mode) {
     }
 
     loop {
-        print_boards(&player1.own_board, &player1.op_board);
+        print_boards(&player1);
         make_move(&mut player1, &mut player2);
         if game_over(&player2) {
             println!("G A M E   O V E R");
@@ -673,9 +679,9 @@ pub fn start_round(mode: types::Mode) {
         }
 
         if mode != types::Mode::Single {
-            print_boards(&player2.own_board, &player2.op_board);
+            print_boards(&player2);
         } else {
-            print_boards(&player2.own_board, &player2.op_board);
+            print_boards(&player2);
             println!("AI - Move:");
         }
 

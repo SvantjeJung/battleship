@@ -1,18 +1,18 @@
 extern crate chan;
 extern crate rand;
 
-use ::bincode::serde::{serialize_into, deserialize_from, DeserializeError};
 use ::bincode;
-use ::model::{helper};
-use ::model::types::{Board, Player, SubField};
+use ::bincode::serde::{serialize_into, deserialize_from, DeserializeError};
+use ::model;
+use ::model::types::{Board, Player, PlayerType, SubField};
 use ::net::{self, types};
 use ::net::types::{MessageType};
+use ::util;
 use std::net::{Shutdown, TcpListener, TcpStream};
-//use std::thread;
-use term_painter::ToStyle;
-use term_painter::Color::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use term_painter::ToStyle;
+use term_painter::Color::*;
 
 #[derive(Debug)]
 enum CurrentPlayer {
@@ -20,6 +20,7 @@ enum CurrentPlayer {
     Client,
 }
 
+/// Initialize and prepare game
 pub fn init(name: String, size: u8, board: Vec<SubField>) {
     let listener = TcpListener::bind((types::LOCALHOST, types::DEFAULT_PORT)).unwrap();
 
@@ -76,18 +77,18 @@ pub fn init(name: String, size: u8, board: Vec<SubField>) {
     // create players
     let host = Player {
         own_board: board.clone(),
-        op_board: vec![SubField::Water; 100],
-        player_type: ::model::types::PlayerType::Human,
+        op_board: Board::init(),
+        player_type: PlayerType::Human,
         name: name,
-        capacity: ::model::types::Board::targets(&board),
+        capacity: Board::targets(&board),
     };
 
     let client = Player {
-        own_board: vec![SubField::Water; 100],
-        op_board: vec![SubField::Water; 100],
-        player_type: ::model::types::PlayerType::Human,
+        own_board: Board::init(),
+        op_board: Board::init(),
+        player_type: PlayerType::Human,
         name: client_name,
-        capacity: 30,
+        capacity: Board::targets(&Board::init()),
     };
 
     // start game
@@ -110,7 +111,7 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
         println!("Please set your ships:");
         ::model::place_ships(&mut host);
     }
-    ::model::print_boards(&host.own_board, &host.op_board);
+    model::print_boards(&host);
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                    Request initial board configuration from client                        //
@@ -167,7 +168,7 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                 let mut coord;
                 loop {
                     println!("{}", Yellow.paint("Please enter a valid coordinate: "));
-                    coord = ::helper::read_string();
+                    coord = util::read_string();
                     if ::model::valid_coordinate(&coord) {
                         break;
                     }
@@ -178,11 +179,11 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                 match ::model::match_move(&mut host, &mut client, coord_id) {
                     SubField::Hit => {
                         net::send(&mut stream, MessageType::Hit(coord_id));
-                        ::model::print_boards(&host.own_board, &host.op_board);
+                        model::print_boards(&host);
                     }
                     SubField::Miss => {
                         net::send(&mut stream, MessageType::Miss(coord_id));
-                        ::model::print_boards(&host.own_board, &host.op_board);
+                        model::print_boards(&host);
                         current_player = CurrentPlayer::Client;
                     }
                     _ => {}
@@ -236,12 +237,12 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                     SubField::Hit => {
                         println!("{} hit one of your ships!", client.name);
                         net::send(&mut stream, MessageType::Hit(coord_id));
-                        ::model::print_boards(&host.own_board, &host.op_board);
+                        model::print_boards(&host);
                     }
                     SubField::Miss => {
                         println!("{} missed your ships.", client.name);
                         net::send(&mut stream, MessageType::Miss(coord_id));
-                        ::model::print_boards(&host.own_board, &host.op_board);
+                        model::print_boards(&host);
                         current_player = CurrentPlayer::Host;
                     }
                     _ => {}

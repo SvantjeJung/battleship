@@ -1,4 +1,5 @@
-use ::model::types::SubField;
+use model;
+use model::types::{Board, SubField};
 
 /// Reads a string from the terminal/user.
 pub fn read_string() -> String {
@@ -28,18 +29,18 @@ pub fn read_usize() -> usize {
 /// Reads external board configuration
 /// Does not check for valid ship placement!
 pub fn read_extern_board(f: &str) -> Vec<SubField> {
-    use ::std::fs::File;
-    use ::std::io::BufReader;
-    use ::std::io::BufRead;
+    use std::fs::File;
+    use std::io::BufReader;
+    use std::io::BufRead;
     let file;
 
     match File::open(f) {
         Ok(f) => file = f,
-        Err(_) => return ::model::types::Board::init()
+        Err(_) => return Board::init()
     }
 
     let mut input = BufReader::new(&file);
-    let mut board = ::model::types::Board::init();
+    let mut board = Board::init();
     let mut id = 0;
     let mut ships = 0;
     for line in input.lines() {
@@ -61,7 +62,7 @@ pub fn read_extern_board(f: &str) -> Vec<SubField> {
     }
 
     if id != 99 {
-        ::model::types::Board::init();
+        Board::init();
     }
 
     board

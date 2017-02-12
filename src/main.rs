@@ -13,11 +13,12 @@ mod client;
 mod model;
 mod net;
 mod server;
+mod util;
 mod view;
+
 
 use bincode::serde::{serialize_into, deserialize_from, DeserializeError};
 use clap::AppSettings;
-use model::helper;
 use model::types::{SubField, Mode};
 use std::net::{Shutdown, TcpStream};
 use std::{time, thread};
@@ -91,13 +92,13 @@ fn main() {
                 );
                 match val.parse::<u8>() {
                     Ok(val) => size = val,
-                    Err(_) => size = helper::read_usize() as u8,
+                    Err(_) => size = util::read_usize() as u8,
                 }
             }
 
             let mut board = ::model::types::Board::init();
             if let Some(b) = server_args.value_of("board") {
-                board = ::helper::read_extern_board(b);
+                board = util::read_extern_board(b);
             }
 
             if let Some(b) = server_args.value_of("ships") {
@@ -161,7 +162,7 @@ fn main() {
 
             let mut board = ::model::types::Board::init();
             if let Some(b) = client_args.value_of("board") {
-                board = ::helper::read_extern_board(b);
+                board = util::read_extern_board(b);
             }
 
             let mut client = ::model::types::Player {
@@ -206,10 +207,6 @@ fn main() {
                                 println!("Server ended the connection.");
                                 break;
                             },
-                            MessageType::Board(b) => {
-                                // TODO
-                                model::print_boards(&b, &vec![SubField::Water; 100]);
-                            },
                             MessageType::RequestCoord => {
                                 print!("{}", Yellow.paint("It's your turn! "));
                                 // send coordinate to shoot
@@ -219,7 +216,7 @@ fn main() {
                                         "{}",
                                         Yellow.paint("Please enter a valid coordinate: ")
                                     );
-                                    coord = ::helper::read_string();
+                                    coord = util::read_string();
                                     if ::model::valid_coordinate(&coord) {
                                         break;
                                     }
@@ -247,10 +244,10 @@ fn main() {
                                     }
                                     Err(_) => println!("Did not receive Hit or Miss message.")
                                 }
-                                model::print_boards(&client.own_board, &client.op_board);
+                                model::print_boards(&client);
                             }
                             MessageType::RequestBoard => {
-                                model::print_boards(&client.own_board, &client.op_board);
+                                model::print_boards(&client);
 
                                 if client.capacity == 0 {
                                     match model::place_ships(&mut client) {
@@ -286,7 +283,7 @@ fn main() {
                                     }
                                     Err(_) => println!("Did not receive Hit or Miss message.")
                                 }
-                                ::model::print_boards(&client.own_board, &client.op_board);
+                                model::print_boards(&client);
                             }
                             MessageType::Lost => {
                                 println!("{}", Yellow.paint("You lost the game :("));
@@ -341,14 +338,14 @@ fn validate_port(p: &str) -> u16 {
         Ok(p) => p,
         Err(_) => {
             println!("Please enter a valid port (1024-65535): ");
-            helper::read_usize() as u16
+            util::read_usize() as u16
         },
     };
 
     loop {
         if port < 1024 {
             println!("Please enter a valid port (1024-65535): ");
-            port = helper::read_usize() as u16;
+            port = util::read_usize() as u16;
         } else {
             break;
         }
