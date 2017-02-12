@@ -131,8 +131,6 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
         };
     }
 
-    net::send(&mut stream, MessageType::Board(client.own_board.clone()));
-
     ///////////////////////////////////////////////////////////////////////////////////////////////
     ///                             Choose random start player                                  ///
     ///////////////////////////////////////////////////////////////////////////////////////////////

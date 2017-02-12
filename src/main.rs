@@ -26,7 +26,9 @@ use term_painter::Color::*;
 const BOARD_SIZE: u8 = 10;
 
 fn main() {
-    // initialize the CLI
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    ///                                Command Line Interface                                   ///
+    ///////////////////////////////////////////////////////////////////////////////////////////////
     let battleship = clap_app!(battleship =>
         (version: crate_version!())
         (author: crate_authors!())
@@ -60,8 +62,10 @@ fn main() {
         .setting(AppSettings::SubcommandRequired)
         .get_matches();
 
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    ///                                         Start                                           ///
+    ///////////////////////////////////////////////////////////////////////////////////////////////
     println!("Welcome to a round of 'battleship'");
-    //model::start_round();
 
     // default --> player vs. player
     let mut mode = Mode::PvP;
@@ -75,6 +79,10 @@ fn main() {
             // optional arguments
             let mut size = BOARD_SIZE;
             if let Some(val) = server_args.value_of("size") {
+                println!(
+                    "{}",
+                    Red.paint("NOT IMPLEMENTED: Custom board size will be reset to 10x10")
+                );
                 match val.parse::<u8>() {
                     Ok(val) => size = val,
                     Err(_) => size = helper::read_usize() as u8,
@@ -95,10 +103,6 @@ fn main() {
             // create server
             let wait = thread::spawn(move || server::init(name, size));
             thread::sleep(time::Duration::from_millis(10));
-
-            // create host player and connect to server
-            //let host = TcpStream::connect((types::LOCALHOST, port)).unwrap();
-            //thread::spawn(move || client::new(name, LOCALHOST, port));
             wait.join();
         },
 
@@ -134,11 +138,12 @@ fn main() {
 
             // create client instance and connect to server
             let mut client_connection = TcpStream::connect((ip, port)).unwrap();
+
             let mut client = ::model::types::Player {
                 own_board: ::model::types::Board::init(),
                 op_board: ::model::types::Board::init(),
                 player_type: ::model::types::PlayerType::Human,
-                capacity: 30,
+                capacity: 0,
                 name: name.to_string(),
             };
 
@@ -179,7 +184,6 @@ fn main() {
                             MessageType::Board(b) => {
                                 // TODO
                                 model::print_boards(&b, &vec![SubField::Water; 100]);
-                                // board = place(client, ...)
                             },
                             MessageType::RequestCoord => {
                                 print!("It's your turn! ");
@@ -215,12 +219,19 @@ fn main() {
                                     }
                                     Err(_) => println!("Did not receive Hit or Miss message.")
                                 }
-                                ::model::print_boards(&client.own_board, &client.op_board);
+                                model::print_boards(&client.own_board, &client.op_board);
                             }
                             MessageType::RequestBoard => {
+                                model::print_boards(&client.own_board, &client.op_board);
+
+                                match model::place_ships(&mut client) {
+                                    Ok(()) => {},
+                                    Err(_) => println!("Failure on placing ships.")
+                                }
+
                                 // let client set all its ships
                                 loop {
-                                    client.own_board = testboard.clone();
+                                    //client.own_board = testboard.clone();
                                     // while not all ships set
                                     break;
                                 }
