@@ -11,6 +11,7 @@ use std::sync::Arc;
 
 mod client;
 mod model;
+mod net;
 mod server;
 mod view;
 
@@ -20,9 +21,9 @@ use model::helper;
 use model::types::{SubField, Mode};
 use std::net::{Shutdown, TcpStream};
 use std::{time, thread};
-use server::net::{types};
+use net::{types};
 use std::str;
-use server::net::types::MessageType;
+use net::types::MessageType;
 use term_painter::ToStyle;
 use term_painter::Color::*;
 
@@ -154,7 +155,7 @@ fn main() {
             let running = Arc::new(AtomicBool::new(true));
             let r = running.clone();
             ctrlc::set_handler(move || {
-                server::net::send(&mut client_conn_clone.try_clone().unwrap(), MessageType::Quit);
+                net::send(&mut client_conn_clone.try_clone().unwrap(), MessageType::Quit);
                 client_conn_clone.shutdown(Shutdown::Both).expect("shutdown call failed");
             }).expect("Error setting Ctrl+C handler");
 
@@ -225,7 +226,7 @@ fn main() {
                                     print!("{}", Red.paint("Invalid coordinate! "));
                                 }
 
-                                server::net::send(&mut connection, MessageType::Shoot(coord));
+                                net::send(&mut connection, MessageType::Shoot(coord));
 
                                 // receive updated opponent board
                                 let result: Result<types::MessageType, DeserializeError> =
@@ -259,7 +260,7 @@ fn main() {
                                 }
 
                                 // send board
-                                server::net::send_board(&mut connection, &client.own_board);
+                                net::send_board(&mut connection, &client.own_board);
                             }
                             MessageType::TurnHost => {
                                 println!(
@@ -353,8 +354,4 @@ fn validate_port(p: &str) -> u16 {
         }
     }
     port
-}
-
-fn process_message(msg: server::net::types::MessageType) {
-
 }

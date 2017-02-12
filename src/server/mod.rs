@@ -1,19 +1,18 @@
-pub mod net;
+extern crate chan;
+extern crate rand;
+
 use ::bincode::serde::{serialize_into, deserialize_from, DeserializeError};
 use ::bincode;
 use ::model::{helper};
 use ::model::types::{Board, Player, SubField};
-use self::net::types;
-use self::net::types::{MessageType};
+use ::net::{self, types};
+use ::net::types::{MessageType};
 use std::net::{Shutdown, TcpListener, TcpStream};
 //use std::thread;
 use term_painter::ToStyle;
 use term_painter::Color::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-
-extern crate chan;
-extern crate rand;
 
 #[derive(Debug)]
 enum CurrentPlayer {
@@ -104,7 +103,10 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     if host.capacity == 0 {
-        net::send(&mut stream, MessageType::Text("Server is setting its ships, please wait :)".to_string()));
+        net::send(
+            &mut stream,
+            MessageType::Text("Server is setting its ships, please wait :)".to_string())
+        );
         println!("Please set your ships:");
         ::model::place_ships(&mut host);
     }
