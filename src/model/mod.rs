@@ -601,8 +601,8 @@ fn match_move(
     match second.own_board[idx] {
         types::SubField::Water => {
             println!("Miss - try again.");
-            first.op_board[idx] = types::SubField::WaterHit;
-            return types::SubField::WaterHit
+            first.op_board[idx] = types::SubField::Miss;
+            return types::SubField::Miss
         },
         types::SubField::Ship => {
             println!("Hit!");
@@ -615,9 +615,9 @@ fn match_move(
             println!("Already hit.");
             return types::SubField::Hit
         },
-        types::SubField::WaterHit => {
+        types::SubField::Miss => {
             println!("Miss - try again.");
-            return types::SubField::WaterHit
+            return types::SubField::Miss
         }
     }
 }

@@ -18,7 +18,7 @@ pub enum SubField {
     Water,
     Ship,
     Hit,
-    WaterHit,
+    Miss,
 }
 
 pub enum ErrorType {
@@ -49,7 +49,7 @@ impl fmt::Display for SubField {
             SubField::Water => write!(f, " ~ "),
             SubField::Ship => write!(f, " ⛵ "),
             SubField::Hit => write!(f, " ❌ "),
-            SubField::WaterHit => write!(f, " ○ ")
+            SubField::Miss => write!(f, " ○ ")
         }
     }
 }
