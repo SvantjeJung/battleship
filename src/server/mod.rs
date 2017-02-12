@@ -5,10 +5,12 @@ use ::model::{helper};
 use ::model::types::{Board, Player, SubField};
 use self::net::types;
 use self::net::types::{MessageType};
-use std::net::{TcpListener, TcpStream};
+use std::net::{Shutdown, TcpListener, TcpStream};
 //use std::thread;
 use term_painter::ToStyle;
 use term_painter::Color::*;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 extern crate chan;
 extern crate rand;
@@ -19,7 +21,7 @@ enum CurrentPlayer {
     Client,
 }
 
-pub fn init(name: String, size: u8) {
+pub fn init(name: String, size: u8, board: Vec<SubField>) {
     let listener = TcpListener::bind((types::LOCALHOST, types::DEFAULT_PORT)).unwrap();
 
     // accept one incoming connection
@@ -29,9 +31,21 @@ pub fn init(name: String, size: u8) {
     // welcome client
     serialize_into(
         &mut client_stream,
-        &(types::MessageType::Welcome("Willkommen".to_string(), name.clone())),
+        &(types::MessageType::Welcome(
+            "Welcome stranger, let me sink your ships!".to_string(),
+            name.clone())
+        ),
         bincode::SizeLimit::Infinite
     );
+
+    // add CTRL+C system hook, so that connection partner is informed about disconnect
+    let mut client_stream_clone = client_stream.try_clone().unwrap();
+    let running = Arc::new(AtomicBool::new(true));
+    let r = running.clone();
+    ::ctrlc::set_handler(move || {
+        net::send(&mut client_stream_clone.try_clone().unwrap(), MessageType::Quit);
+        client_stream_clone.shutdown(Shutdown::Both).expect("shutdown call failed");
+    }).expect("Error setting Ctrl+C handler");
 
     // wait for client to send his name
     let recv: Result<types::MessageType, DeserializeError> =
@@ -43,6 +57,10 @@ pub fn init(name: String, size: u8) {
                 MessageType::Login(name) => {
                     name
                 },
+                MessageType::Quit => {
+                    println!("Client closed connection.");
+                    return
+                },
                 _ => {
                     // unexpected packet
 
@@ -51,18 +69,18 @@ pub fn init(name: String, size: u8) {
             }
         },
         Err(_) => {
-            println!("ERROR");
+            println!("ERROR hit me");
             "".to_string()
         },
     };
 
     // create players
     let host = Player {
-        own_board: vec![SubField::Water; 100],
+        own_board: board.clone(),
         op_board: vec![SubField::Water; 100],
         player_type: ::model::types::PlayerType::Human,
         name: name,
-        capacity: 30,
+        capacity: ::model::types::Board::targets(&board),
     };
 
     let client = Player {
@@ -76,36 +94,24 @@ pub fn init(name: String, size: u8) {
     // start game
     start(host, client, client_stream);
 
-    println!("Bye.");
+    println!("\n{}", Yellow.paint("Bye."));
 }
 
+/// Starting the game with given parameters
 fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
-    // for testing purpose
-    const W: SubField = SubField::Water;
-    const S: SubField = SubField::Ship;
-    let testboard = vec![
-        W,W,S,S,S,S,S,W,W,S,
-        W,W,W,W,W,W,W,W,W,S,
-        W,S,W,S,S,S,W,W,W,S,
-        W,S,W,W,W,W,W,W,W,W,
-        W,S,W,S,W,S,S,W,W,S,
-        W,S,W,S,W,W,W,W,W,S,
-        W,W,W,W,W,W,W,W,W,W,
-        W,W,W,W,W,W,S,S,S,S,
-        W,S,S,S,W,W,W,W,W,W,
-        W,W,W,W,W,W,S,S,W,W,
-    ];
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //                    Request initial board configuration from host                          //
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    if host.capacity == 0 {
+        net::send(&mut stream, MessageType::Text("Server is setting its ships, please wait :)".to_string()));
+        println!("Please set your ships:");
+        ::model::place_ships(&mut host);
+    }
+    ::model::print_boards(&host.own_board, &host.op_board);
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    ///                    Request initial board configuration from host                        ///
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-    println!("Please set your ships: ");
-    // TODO modify model::place()
-    println!("{}", Red.paint("TODO implement!"));
-    host.own_board = testboard;
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-    ///                    Request initial board configuration from client                      ///
+    //                    Request initial board configuration from client                        //
     ///////////////////////////////////////////////////////////////////////////////////////////////
     net::send(&mut stream, MessageType::RequestBoard);
 
@@ -120,19 +126,24 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                         client.own_board = vec;
                         break;
                     },
+                    MessageType::Quit => {
+                        println!("Client closed connection.");
+                        return
+                    },
                     _ => continue,
                 }
             },
             Err(_) => {
-                println!("ERROR");
-                "".to_string();
-                continue
+                println!("ERROR board");
+                net::send(&mut stream, MessageType::Quit);
+                stream.shutdown(Shutdown::Both).expect("shutdown call failed");
+                return
             },
         };
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    ///                             Choose random start player                                  ///
+    //                              Choose random start player                                   //
     ///////////////////////////////////////////////////////////////////////////////////////////////
     let mut current_player = match choose_player(&host, &client).name == host.name {
         true => CurrentPlayer::Host,
@@ -141,7 +152,7 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
     println!("Starting player: {:?}", current_player);
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    ///                             Take turns while not ended                                  ///
+    //                             Take turns while not ended                                    //
     ///////////////////////////////////////////////////////////////////////////////////////////////
     loop {
         match current_player {
@@ -150,10 +161,10 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                 net::send(&mut stream, MessageType::TurnHost);
 
                 // wait for input from Host
-                println!("It's your turn!");
+                println!("{}", Yellow.paint("It's your turn!"));
                 let mut coord;
                 loop {
-                    println!("Please enter a valid coordinate: ");
+                    println!("{}", Yellow.paint("Please enter a valid coordinate: "));
                     coord = ::helper::read_string();
                     if ::model::valid_coordinate(&coord) {
                         break;
@@ -164,12 +175,10 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                 let coord_id = Board::get_index(&coord);
                 match ::model::match_move(&mut host, &mut client, coord_id) {
                     SubField::Hit => {
-                        println!("Hit a ship!");
                         net::send(&mut stream, MessageType::Hit(coord_id));
                         ::model::print_boards(&host.own_board, &host.op_board);
                     }
                     SubField::Miss => {
-                        println!("Unfortunately a miss.");
                         net::send(&mut stream, MessageType::Miss(coord_id));
                         ::model::print_boards(&host.own_board, &host.op_board);
                         current_player = CurrentPlayer::Client;
@@ -185,6 +194,12 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                 }
             }
             CurrentPlayer::Client => {
+                println!(
+                    "{} {} {}",
+                    Cyan.paint("Wait for"),
+                    Yellow.paint(&client.name),
+                    Cyan.paint("to finish turn!"),
+                );
                 // inform Client that its his turn
                 net::send(&mut stream, MessageType::RequestCoord);
                 // wait for input from Client
@@ -197,6 +212,10 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                             MessageType::Shoot(coord) => {
                                 coord
                             },
+                            MessageType::Quit => {
+                                println!("Client closed connection.");
+                                return
+                            },
                             _ => {
                                 // unexpected packet
                                 "".to_string()
@@ -204,8 +223,8 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                         }
                     },
                     Err(_) => {
-                        println!("ERROR");
-                        "".to_string()
+                        println!("ERROR coord");
+                        return
                     },
                 };
 
@@ -237,7 +256,7 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    ///                                 Quit game                                               ///
+    //                                  Quit game                                                //
     ///////////////////////////////////////////////////////////////////////////////////////////////
     net::send(&mut stream, MessageType::Quit);
 }

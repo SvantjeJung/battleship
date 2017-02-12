@@ -63,7 +63,6 @@ impl Board {
 
     pub fn get_index(coord: &str) -> usize {
         let mut case = coord.to_uppercase();
-        println!("{}", case);
         match case.as_ref() {
             "A0"|"0A" => 90, "A1"|"1A" => 80, "A2"|"2A" => 70, "A3"|"3A" => 60, "A4"|"4A" => 50,
             "A5"|"5A" => 40, "A6"|"6A" => 30, "A7"|"7A" => 20, "A8"|"8A" => 10, "A9"|"9A" => 0,
@@ -87,5 +86,13 @@ impl Board {
             "J5"|"5J" => 49, "J6"|"6J" => 39, "J7"|"7J" => 29, "J8"|"8J" => 19, "J9"|"9J" => 9,
             _ => 100,
         }
+    }
+
+    pub fn empty(board: &Vec<SubField>) -> bool {
+        board.iter().all(|elem| *elem == SubField::Water)
+    }
+
+    pub fn targets(board: &Vec<SubField>) -> usize {
+        board.iter().filter(|&elem| *elem == SubField::Ship).count()
     }
 }

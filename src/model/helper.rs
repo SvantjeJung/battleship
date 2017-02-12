@@ -1,3 +1,5 @@
+use ::model::types::SubField;
+
 /// Reads a string from the terminal/user.
 pub fn read_string() -> String {
     use std::io::stdin;
@@ -21,4 +23,46 @@ pub fn read_usize() -> usize {
             Err(_) => println!("That was not an unsigned integer! Please try again!"),
         }
     }
+}
+
+/// Reads external board configuration
+/// Does not check for valid ship placement!
+pub fn read_extern_board(f: &str) -> Vec<SubField> {
+    use ::std::fs::File;
+    use ::std::io::BufReader;
+    use ::std::io::BufRead;
+    let file;
+
+    match File::open(f) {
+        Ok(f) => file = f,
+        Err(_) => return ::model::types::Board::init()
+    }
+
+    let mut input = BufReader::new(&file);
+    let mut board = ::model::types::Board::init();
+    let mut id = 0;
+    let mut ships = 0;
+    for line in input.lines() {
+        let l = line.unwrap();
+        if l.starts_with("#") {
+            continue
+        }
+        for c in l.chars() {
+            match c {
+                'X' => {
+                    board[id] = SubField::Ship;
+                    ships += 1;
+                    id += 1
+                },
+                '-' => id += 1,
+                _ => {}
+            }
+        }
+    }
+
+    if id != 99 {
+        ::model::types::Board::init();
+    }
+
+    board
 }

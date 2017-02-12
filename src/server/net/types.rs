@@ -26,5 +26,6 @@ pub enum MessageType {
     Miss(usize),
     Welcome(String, String),
     Shoot(String),
+    Text(String),
     Board(Vec<SubField>),
 }

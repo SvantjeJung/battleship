@@ -9,7 +9,7 @@ pub mod helper;
 
 /// Visualization of the boards.
 pub fn print_boards(board1: &Vec<types::SubField>, board2: &Vec<types::SubField>) {
-    println!("{}{}", "------------------ O W N   B O A R D ------------------",
+    println!("\n{}{}", "------------------ O W N   B O A R D ------------------",
         "-------------------------- O P P O N E N T ---------------");
 
     let mut cnt = 9;
@@ -41,6 +41,7 @@ pub fn print_boards(board1: &Vec<types::SubField>, board2: &Vec<types::SubField>
     println!("");
     println!("{}{}", "----------------------------------------------------",
         "-------------------------------------------------------------");
+    println!("");
 }
 
 /// Determines whether the chosen field is a valid one. Considers the

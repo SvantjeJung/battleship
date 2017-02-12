@@ -5,6 +5,9 @@ extern crate bincode;
 #[macro_use]
 extern crate serde_derive;
 extern crate rand;
+extern crate ctrlc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 mod client;
 mod model;
@@ -15,7 +18,7 @@ use bincode::serde::{serialize_into, deserialize_from, DeserializeError};
 use clap::AppSettings;
 use model::helper;
 use model::types::{SubField, Mode};
-use std::net::{TcpStream};
+use std::net::{Shutdown, TcpStream};
 use std::{time, thread};
 use server::net::{types};
 use std::str;
@@ -43,6 +46,7 @@ fn main() {
                 "set N as board dimension => N x N [not yet implemented]"
             )
             (@arg ships: --ships +takes_value "load ship configuration [not yet implemented]")
+            (@arg board: --board +takes_value "load board configuration")
         )
         (@subcommand client =>
             (about: "Client instance for the game")
@@ -51,6 +55,7 @@ fn main() {
             (@arg ip: +required +takes_value "Connect to address")
             (@arg port: +required +takes_value "Connect to port")
             (@arg name: +required +takes_value "Name of player")
+            (@arg board: --board +takes_value "load board configuration")
         )
         (@subcommand single =>
             (about: "Play against the computer")
@@ -65,7 +70,7 @@ fn main() {
     ///////////////////////////////////////////////////////////////////////////////////////////////
     ///                                         Start                                           ///
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    println!("Welcome to a round of 'battleship'");
+    println!("{}", Yellow.paint("Welcome to a round of 'battleship'"));
 
     // default --> player vs. player
     let mut mode = Mode::PvP;
@@ -89,8 +94,13 @@ fn main() {
                 }
             }
 
-            if let Some(_) = server_args.value_of("ships") {
-                println!("NOT IMPLEMENTED: loading custom ship configuration");
+            let mut board = ::model::types::Board::init();
+            if let Some(b) = server_args.value_of("board") {
+                board = ::helper::read_extern_board(b);
+            }
+
+            if let Some(b) = server_args.value_of("ships") {
+                println!("{}", Red.paint("NOT IMPLEMENTED: Custom ship configuration"));
             }
 
             println!(
@@ -101,7 +111,7 @@ fn main() {
             );
 
             // create server
-            let wait = thread::spawn(move || server::init(name, size));
+            let wait = thread::spawn(move || server::init(name, size, board));
             thread::sleep(time::Duration::from_millis(10));
             wait.join();
         },
@@ -137,13 +147,27 @@ fn main() {
             );
 
             // create client instance and connect to server
-            let mut client_connection = TcpStream::connect((ip, port)).unwrap();
+            let mut connection = TcpStream::connect((ip, port)).unwrap();
+
+            // add CTRL+C system hook, so that connection partner is informed about disconnect
+            let mut client_conn_clone = connection.try_clone().unwrap();
+            let running = Arc::new(AtomicBool::new(true));
+            let r = running.clone();
+            ctrlc::set_handler(move || {
+                server::net::send(&mut client_conn_clone.try_clone().unwrap(), MessageType::Quit);
+                client_conn_clone.shutdown(Shutdown::Both).expect("shutdown call failed");
+            }).expect("Error setting Ctrl+C handler");
+
+            let mut board = ::model::types::Board::init();
+            if let Some(b) = client_args.value_of("board") {
+                board = ::helper::read_extern_board(b);
+            }
 
             let mut client = ::model::types::Player {
-                own_board: ::model::types::Board::init(),
+                own_board: board.clone(),
                 op_board: ::model::types::Board::init(),
                 player_type: ::model::types::PlayerType::Human,
-                capacity: 0,
+                capacity: ::model::types::Board::targets(&board),
                 name: name.to_string(),
             };
 
@@ -153,18 +177,18 @@ fn main() {
                 //let msg = client_connection.read_to_end(&mut buffer);
                 //println!("{}", str::from_utf8(&buffer).unwrap());
                 let recv: Result<types::MessageType, DeserializeError> =
-                    deserialize_from(&mut client_connection, bincode::SizeLimit::Infinite);
+                    deserialize_from(&mut connection, bincode::SizeLimit::Infinite);
                 match recv {
                     Ok(received) => {
                         println!("RP: {:?}", received);
                         // process_message(received);
                         match received {
                             MessageType::Welcome(msg, host) => {
-                                println!("{}", msg);
+                                println!("{}", Yellow.paint(msg));
                                 host_name = host;
                                 // send Login data
                                 serialize_into(
-                                    &mut client_connection,
+                                    &mut connection,
                                     &(types::MessageType::Login(name.to_string())),
                                     bincode::SizeLimit::Infinite
                                 );
@@ -172,7 +196,7 @@ fn main() {
                             MessageType::Ping => {
                                 // send Ping
                                 serialize_into(
-                                    &mut client_connection,
+                                    &mut connection,
                                     &(types::MessageType::Ping),
                                     bincode::SizeLimit::Infinite
                                 );
@@ -186,11 +210,14 @@ fn main() {
                                 model::print_boards(&b, &vec![SubField::Water; 100]);
                             },
                             MessageType::RequestCoord => {
-                                print!("It's your turn! ");
+                                print!("{}", Yellow.paint("It's your turn! "));
                                 // send coordinate to shoot
                                 let mut coord;
                                 loop {
-                                    println!("Please enter a valid coordinate: ");
+                                    println!(
+                                        "{}",
+                                        Yellow.paint("Please enter a valid coordinate: ")
+                                    );
                                     coord = ::helper::read_string();
                                     if ::model::valid_coordinate(&coord) {
                                         break;
@@ -198,20 +225,20 @@ fn main() {
                                     print!("{}", Red.paint("Invalid coordinate! "));
                                 }
 
-                                server::net::send(&mut client_connection, MessageType::Shoot(coord));
+                                server::net::send(&mut connection, MessageType::Shoot(coord));
 
                                 // receive updated opponent board
                                 let result: Result<types::MessageType, DeserializeError> =
-                                    deserialize_from(&mut client_connection, bincode::SizeLimit::Infinite);
+                                    deserialize_from(&mut connection, bincode::SizeLimit::Infinite);
                                 match result {
                                     Ok(res) => {
                                         match res {
                                             MessageType::Hit(id) => {
-                                                println!("Yay, hit a ship!");
+                                                println!("{}", Green.paint("Hit!"));
                                                 client.op_board[id] = SubField::Hit;
                                             }
                                             MessageType::Miss(id) => {
-                                                println!("Miss :(");
+                                                println!("{}", Blue.paint("Miss!"));
                                                 client.op_board[id] = SubField::Miss;
                                             }
                                             _ => {}
@@ -224,25 +251,26 @@ fn main() {
                             MessageType::RequestBoard => {
                                 model::print_boards(&client.own_board, &client.op_board);
 
-                                match model::place_ships(&mut client) {
-                                    Ok(()) => {},
-                                    Err(_) => println!("Failure on placing ships.")
+                                if client.capacity == 0 {
+                                    match model::place_ships(&mut client) {
+                                        Ok(()) => {},
+                                        Err(_) => println!("Failure on placing ships.")
+                                    }
                                 }
 
-                                // let client set all its ships
-                                loop {
-                                    //client.own_board = testboard.clone();
-                                    // while not all ships set
-                                    break;
-                                }
                                 // send board
-                                server::net::send_board(&mut client_connection, &client.own_board);
+                                server::net::send_board(&mut connection, &client.own_board);
                             }
                             MessageType::TurnHost => {
-                                println!("Wait for {} to finish turn!", Yellow.paint(&host_name));
+                                println!(
+                                    "{} {} {}",
+                                    Cyan.paint("Wait for"),
+                                    Yellow.paint(&host_name),
+                                    Cyan.paint("to finish turn!"),
+                                );
 
                                 let result: Result<types::MessageType, DeserializeError> =
-                                    deserialize_from(&mut client_connection, bincode::SizeLimit::Infinite);
+                                    deserialize_from(&mut connection, bincode::SizeLimit::Infinite);
                                 match result {
                                     Ok(res) => {
                                         match res {
@@ -263,7 +291,10 @@ fn main() {
                                 println!("{}", Yellow.paint("You lost the game :("));
                             }
                             MessageType::Won => {
-                                println!("{}", Yellow.paint("Congratulations, you won the game :)"));
+                                println!("{}", Yellow.paint("Congratulations, you won the game!"));
+                            }
+                            MessageType::Text(t) => {
+                                println!("{}", Cyan.paint(t));
                             }
                             MessageType::Unexpected => {
                                 // resend expected packet
@@ -274,7 +305,7 @@ fn main() {
                         }
                     },
                     Err(_) => {
-                        println!("Nothing to read - connection dropped...");
+                        println!("{}", Red.paint("Connection dropped..."));
                         break;
                     },
                 };
