@@ -52,7 +52,6 @@ pub fn init(name: String, size: u8, board: Vec<SubField>) {
         deserialize_from(&mut client_stream, bincode::SizeLimit::Infinite);
     let client_name = match recv {
         Ok(received) => {
-            println!("RP: {:?}", received);
             match received {
                 MessageType::Login(name) => {
                     name
@@ -123,7 +122,6 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
         deserialize_from(&mut stream, bincode::SizeLimit::Infinite);
         match recv {
             Ok(received) => {
-                println!("RP: {:?}", received);
                 match received {
                     MessageType::Board(vec) => {
                         client.own_board = vec;
@@ -210,7 +208,6 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                     deserialize_from(&mut stream, bincode::SizeLimit::Infinite);
                 let coordinate = match recv {
                     Ok(received) => {
-                        println!("RP: {:?}", received);
                         match received {
                             MessageType::Shoot(coord) => {
                                 coord

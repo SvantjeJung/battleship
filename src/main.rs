@@ -182,7 +182,6 @@ fn main() {
                     deserialize_from(&mut connection, bincode::SizeLimit::Infinite);
                 match recv {
                     Ok(received) => {
-                        println!("RP: {:?}", received);
                         // process_message(received);
                         match received {
                             MessageType::Welcome(msg, host) => {
