@@ -1,4 +1,3 @@
-use model;
 use model::types::{Board, SubField};
 
 /// Reads a string from the terminal/user.
@@ -39,10 +38,9 @@ pub fn read_extern_board(f: &str) -> Vec<SubField> {
         Err(_) => return Board::init()
     }
 
-    let mut input = BufReader::new(&file);
+    let input = BufReader::new(&file);
     let mut board = Board::init();
     let mut id = 0;
-    let mut ships = 0;
     for line in input.lines() {
         let l = line.unwrap();
         if l.starts_with("#") {
@@ -52,7 +50,6 @@ pub fn read_extern_board(f: &str) -> Vec<SubField> {
             match c {
                 'X' => {
                     board[id] = SubField::Ship;
-                    ships += 1;
                     id += 1
                 },
                 '-' => id += 1,

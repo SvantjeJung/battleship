@@ -1,13 +1,11 @@
-#[macro_use]
-extern crate clap;
-extern crate term_painter;
 extern crate bincode;
 #[macro_use]
-extern crate serde_derive;
-extern crate rand;
+extern crate clap;
 extern crate ctrlc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+extern crate rand;
+#[macro_use]
+extern crate serde_derive;
+extern crate term_painter;
 
 mod client;
 mod model;
@@ -16,15 +14,14 @@ mod server;
 mod util;
 mod view;
 
-
-use bincode::serde::{serialize_into, deserialize_from, DeserializeError};
+use bincode::serde::{deserialize_from, DeserializeError};
 use clap::AppSettings;
 use model::types::{SubField, Mode};
+use net::types::{self, MessageType};
 use std::net::{Shutdown, TcpStream};
-use std::{time, thread};
-use net::{types};
-use std::str;
-use net::types::MessageType;
+use std::{str, time, thread};
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 use term_painter::ToStyle;
 use term_painter::Color::*;
 
@@ -101,7 +98,7 @@ fn main() {
                 board = util::read_extern_board(b);
             }
 
-            if let Some(b) = server_args.value_of("ships") {
+            if let Some(_) = server_args.value_of("ships") {
                 println!("{}", Red.paint("NOT IMPLEMENTED: Custom ship configuration"));
             }
 
@@ -115,26 +112,10 @@ fn main() {
             // create server
             let wait = thread::spawn(move || server::init(name, size, board));
             thread::sleep(time::Duration::from_millis(10));
-            wait.join();
+            let _ = wait.join();
         },
 
         ("client", Some(client_args)) => {
-            // for testing purpose
-            const W: SubField = SubField::Water;
-            const S: SubField = SubField::Ship;
-            let testboard = vec![
-                W,W,S,S,S,S,S,W,W,S,
-                W,W,W,W,W,W,W,W,W,S,
-                W,S,W,S,S,S,W,W,W,S,
-                W,S,W,W,W,W,W,W,W,W,
-                W,S,W,S,W,S,S,W,W,S,
-                W,S,W,S,W,W,W,W,W,S,
-                W,W,W,W,W,W,W,W,W,W,
-                W,W,W,W,W,W,S,S,S,S,
-                W,S,S,S,W,W,W,W,W,W,
-                W,W,W,W,W,W,S,S,W,W,
-            ];
-
             // required arguments
             let ip = client_args.value_of("ip").unwrap();
             // TODO: check for valid ip-address
@@ -152,9 +133,9 @@ fn main() {
             let mut connection = TcpStream::connect((ip, port)).unwrap();
 
             // add CTRL+C system hook, so that connection partner is informed about disconnect
-            let mut client_conn_clone = connection.try_clone().unwrap();
+            let client_conn_clone = connection.try_clone().unwrap();
             let running = Arc::new(AtomicBool::new(true));
-            let r = running.clone();
+            let _ = running.clone();
             ctrlc::set_handler(move || {
                 net::send(&mut client_conn_clone.try_clone().unwrap(), MessageType::Quit);
                 client_conn_clone.shutdown(Shutdown::Both).expect("shutdown call failed");
@@ -187,20 +168,10 @@ fn main() {
                             MessageType::Welcome(msg, host) => {
                                 println!("{}", Yellow.paint(msg));
                                 host_name = host;
-                                // send Login data
-                                serialize_into(
-                                    &mut connection,
-                                    &(types::MessageType::Login(name.to_string())),
-                                    bincode::SizeLimit::Infinite
-                                );
+                                net::send(&mut connection, MessageType::Login(name.to_string()));
                             },
                             MessageType::Ping => {
-                                // send Ping
-                                serialize_into(
-                                    &mut connection,
-                                    &(types::MessageType::Ping),
-                                    bincode::SizeLimit::Infinite
-                                );
+                                net::send(&mut connection, MessageType::Ping);
                             },
                             MessageType::Quit => {
                                 println!("Server ended the connection.");
@@ -256,7 +227,13 @@ fn main() {
                                 }
 
                                 // send board
-                                net::send_board(&mut connection, &client.own_board);
+                                net::send(
+                                    &mut connection,
+                                    MessageType::Board(client.own_board.clone())
+                                );
+                            }
+                            MessageType::Text(t) => {
+                                println!("{}", Cyan.paint(t));
                             }
                             MessageType::TurnHost => {
                                 println!(
@@ -289,12 +266,6 @@ fn main() {
                             }
                             MessageType::Won => {
                                 println!("{}", Yellow.paint("Congratulations, you won the game!"));
-                            }
-                            MessageType::Text(t) => {
-                                println!("{}", Cyan.paint(t));
-                            }
-                            MessageType::Unexpected => {
-                                // resend expected packet
                             }
                             _ => {
                                 println!("{}", Red.paint("Received unexpected packet"));

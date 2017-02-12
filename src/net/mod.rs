@@ -1,19 +1,11 @@
 pub mod types;
 
-use ::bincode::serde::{serialize_into, deserialize_from, DeserializeError};
-use ::model::types::SubField;
-use std::net::{TcpListener, TcpStream};
+use ::bincode::serde::serialize_into;
+use std::net::TcpStream;
 
-pub fn send_board(mut stream: &mut TcpStream, board: &Vec<SubField>) {
-    serialize_into(
-        &mut stream,
-        &(types::MessageType::Board(board.clone())),
-        ::bincode::SizeLimit::Infinite
-    );
-}
-
+/// Send a message to connected partner on stream
 pub fn send(mut stream: &mut TcpStream, msg: types::MessageType) {
-    serialize_into(
+    let _ = serialize_into(
         &mut stream,
         &msg,
         ::bincode::SizeLimit::Infinite

@@ -2,14 +2,14 @@ extern crate chan;
 extern crate rand;
 
 use ::bincode;
-use ::bincode::serde::{serialize_into, deserialize_from, DeserializeError};
+use ::bincode::serde::{deserialize_from, DeserializeError};
 use ::model;
 use ::model::types::{Board, Player, PlayerType, SubField};
 use ::net::{self, types};
 use ::net::types::{MessageType};
 use ::util;
 use std::net::{Shutdown, TcpListener, TcpStream};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use term_painter::ToStyle;
 use term_painter::Color::*;
@@ -29,19 +29,17 @@ pub fn init(name: String, size: u8, board: Vec<SubField>) {
     let mut client_stream = client_conn.try_clone().unwrap();
 
     // welcome client
-    serialize_into(
+    net::send(
         &mut client_stream,
-        &(types::MessageType::Welcome(
+        MessageType::Welcome(
             "Welcome stranger, let me sink your ships!".to_string(),
             name.clone())
-        ),
-        bincode::SizeLimit::Infinite
     );
 
     // add CTRL+C system hook, so that connection partner is informed about disconnect
-    let mut client_stream_clone = client_stream.try_clone().unwrap();
+    let client_stream_clone = client_stream.try_clone().unwrap();
     let running = Arc::new(AtomicBool::new(true));
-    let r = running.clone();
+    let _ = running.clone();
     ::ctrlc::set_handler(move || {
         net::send(&mut client_stream_clone.try_clone().unwrap(), MessageType::Quit);
         client_stream_clone.shutdown(Shutdown::Both).expect("shutdown call failed");
@@ -108,7 +106,14 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
             MessageType::Text("Server is setting its ships, please wait :)".to_string())
         );
         println!("Please set your ships:");
-        ::model::place_ships(&mut host);
+        match ::model::place_ships(&mut host) {
+            Ok(()) => {},
+            Err(_) => {
+                println!("Failed placing ships!");
+                net::send(&mut stream, MessageType::Quit);
+                return
+            }
+        }
     }
     model::print_boards(&host);
 
@@ -151,7 +156,7 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
         true => CurrentPlayer::Host,
         false => CurrentPlayer::Client,
     };
-    println!("Starting player: {:?}", current_player);
+    println!("Starting player: {:?}", Yellow.paint(&current_player));
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                             Take turns while not ended                                    //

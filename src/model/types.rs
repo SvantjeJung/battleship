@@ -57,12 +57,14 @@ impl fmt::Display for SubField {
 pub struct Board(Vec<SubField>);
 
 impl Board {
+    /// Initializes a board with just water
     pub fn init() -> Vec<SubField> {
         vec![SubField::Water; 100]
     }
 
+    /// Returns index on board for given inputs
     pub fn get_index(coord: &str) -> usize {
-        let mut case = coord.to_uppercase();
+        let case = coord.to_uppercase();
         match case.as_ref() {
             "A0"|"0A" => 90, "A1"|"1A" => 80, "A2"|"2A" => 70, "A3"|"3A" => 60, "A4"|"4A" => 50,
             "A5"|"5A" => 40, "A6"|"6A" => 30, "A7"|"7A" => 20, "A8"|"8A" => 10, "A9"|"9A" => 0,
@@ -88,10 +90,12 @@ impl Board {
         }
     }
 
+    /// Returns true if no Ships set on board
     pub fn empty(board: &Vec<SubField>) -> bool {
         board.iter().all(|elem| *elem == SubField::Water)
     }
 
+    /// Returns number of Ships on board
     pub fn targets(board: &Vec<SubField>) -> usize {
         board.iter().filter(|&elem| *elem == SubField::Ship).count()
     }
