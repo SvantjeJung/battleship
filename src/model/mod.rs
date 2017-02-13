@@ -337,6 +337,10 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), types
     let input = util::read_string();
     let mut idx = types::Board::get_index(&input);
     loop {
+        while idx == 100 {
+            println!("Invalid input, again please.");
+            idx = types::Board::get_index(&util::read_string());
+        }
         // The complete Moore neighborhood needs to be free
         // to place the first part of the ship.
         if valid_field(&player, idx, "") {
