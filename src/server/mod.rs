@@ -20,9 +20,17 @@ enum CurrentPlayer {
     Client,
 }
 
+pub struct Server {
+    pub ip: &'static str,
+    pub port: u16,
+    pub host_name: String,
+    pub host_board: Vec<SubField>,
+    pub board_dim: u8,
+}
+
 /// Initialize and prepare game
-pub fn init(name: String, size: u8, board: Vec<SubField>) {
-    let listener = TcpListener::bind((types::LOCALHOST, types::DEFAULT_PORT)).unwrap();
+pub fn init(server: Server) {
+    let listener = TcpListener::bind((server.ip, server.port)).unwrap();
 
     // accept one incoming connection
     let (client_conn, _) = listener.accept().unwrap();
@@ -33,7 +41,7 @@ pub fn init(name: String, size: u8, board: Vec<SubField>) {
         &mut client_stream,
         MessageType::Welcome(
             "Welcome stranger, let me sink your ships!".to_string(),
-            name.clone())
+            server.host_name.clone())
     );
 
     // add CTRL+C system hook, so that connection partner is informed about disconnect
@@ -73,11 +81,11 @@ pub fn init(name: String, size: u8, board: Vec<SubField>) {
 
     // create players
     let host = Player {
-        own_board: board.clone(),
+        own_board: server.host_board.clone(),
         op_board: Board::init(),
         player_type: PlayerType::Human,
-        name: name,
-        capacity: Board::targets(&board),
+        name: server.host_name,
+        capacity: Board::targets(&server.host_board),
     };
 
     let client = Player {
@@ -124,7 +132,7 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
 
     loop {
         let recv: Result<types::MessageType, DeserializeError> =
-        deserialize_from(&mut stream, bincode::SizeLimit::Infinite);
+            deserialize_from(&mut stream, bincode::SizeLimit::Infinite);
         match recv {
             Ok(received) => {
                 match received {

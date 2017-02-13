@@ -110,9 +110,15 @@ fn main() {
             );
 
             // create server
-            let wait = thread::spawn(move || server::init(name, size, board));
-            thread::sleep(time::Duration::from_millis(10));
-            let _ = wait.join();
+            let server = server::Server {
+                ip: net::types::LOCALHOST,
+                port: port,
+                host_name: name,
+                host_board: board,
+                board_dim: size,
+            };
+
+            server::init(server);
         },
 
         ("client", Some(client_args)) => {
