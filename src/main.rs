@@ -69,7 +69,7 @@ fn main() {
     ///////////////////////////////////////////////////////////////////////////////////////////////
     ///                                         Start                                           ///
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    println!("{}", Yellow.paint("Welcome to a round of 'battleship'"));
+    Yellow.with(|| println!("Welcome to a round of 'battleship'"));
 
     // default --> player vs. player
     let mut mode = Mode::PvP;
@@ -83,10 +83,7 @@ fn main() {
             // optional arguments
             let mut size = BOARD_SIZE;
             if let Some(val) = server_args.value_of("size") {
-                println!(
-                    "{}",
-                    Red.paint("NOT IMPLEMENTED: Custom board size will be reset to 10x10")
-                );
+                Red.with(|| println!("NOT IMPLEMENTED: Custom board size will be reset to 10x10"));
                 match val.parse::<u8>() {
                     Ok(val) => size = val,
                     Err(_) => size = util::read_usize() as u8,
@@ -99,7 +96,7 @@ fn main() {
             }
 
             if let Some(_) = server_args.value_of("ships") {
-                println!("{}", Red.paint("NOT IMPLEMENTED: Custom ship configuration"));
+                Red.with(|| println!("NOT IMPLEMENTED: Custom ship configuration"));
             }
 
             println!(
@@ -172,7 +169,7 @@ fn main() {
                         // process_message(received);
                         match received {
                             MessageType::Welcome(msg, host) => {
-                                println!("{}", Yellow.paint(msg));
+                                Yellow.with(|| println!("{}", (msg)));
                                 host_name = host;
                                 net::send(&mut connection, MessageType::Login(name.to_string()));
                             },
@@ -184,19 +181,16 @@ fn main() {
                                 break;
                             },
                             MessageType::RequestCoord => {
-                                print!("{}", Yellow.paint("It's your turn! "));
+                                Yellow.with(|| print!("It's your turn! "));
                                 // send coordinate to shoot
                                 let mut coord;
                                 loop {
-                                    println!(
-                                        "{}",
-                                        Yellow.paint("Please enter a valid coordinate: ")
-                                    );
+                                    Yellow.with(|| println!("Please enter a valid coordinate: "));
                                     coord = util::read_string();
                                     if ::model::valid_coordinate(&coord) {
                                         break;
                                     }
-                                    print!("{}", Red.paint("Invalid coordinate! "));
+                                    Red.with(|| print!("Invalid coordinate! "));
                                 }
 
                                 net::send(&mut connection, MessageType::Shoot(coord));
@@ -208,11 +202,11 @@ fn main() {
                                     Ok(res) => {
                                         match res {
                                             MessageType::Hit(id) => {
-                                                println!("{}", Green.paint("Hit!"));
+                                                Green.with(|| println!("Hit!"));
                                                 client.op_board[id] = SubField::Hit;
                                             }
                                             MessageType::Miss(id) => {
-                                                println!("{}", Blue.paint("Miss!"));
+                                                Blue.with(|| println!("Miss!"));
                                                 client.op_board[id] = SubField::Miss;
                                             }
                                             _ => {}
@@ -239,7 +233,7 @@ fn main() {
                                 );
                             }
                             MessageType::Text(t) => {
-                                println!("{}", Cyan.paint(t));
+                                Cyan.with(|| println!("{}", t));
                             }
                             MessageType::TurnHost => {
                                 println!(
@@ -268,23 +262,21 @@ fn main() {
                                 model::print_boards(&client);
                             }
                             MessageType::Lost => {
-                                println!("{}", Yellow.paint("You lost the game :("));
+                                Yellow.with(|| println!("You lost the game :("));
                             }
                             MessageType::Won => {
-                                println!("{}", Yellow.paint("Congratulations, you won the game!"));
+                                Yellow.with(|| println!("Congratulations, you won the game!"));
                             }
                             _ => {
-                                println!("{}", Red.paint("Received unexpected packet"));
+                                Red.with(|| println!("Received unexpected packet"));
                             }
                         }
                     },
                     Err(_) => {
-                        println!("{}", Red.paint("Connection dropped..."));
+                        Red.with(|| println!("Connection dropped..."));
                         break;
                     },
                 };
-
-
             }
         },
 

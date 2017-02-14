@@ -99,7 +99,7 @@ pub fn init(server: Server) {
     // start game
     start(host, client, client_stream);
 
-    println!("\n{}", Yellow.paint("Bye."));
+    Yellow.with(|| println!("\nBye."));
 }
 
 /// Starting the game with given parameters
@@ -176,15 +176,15 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                 net::send(&mut stream, MessageType::TurnHost);
 
                 // wait for input from Host
-                println!("{}", Yellow.paint("It's your turn!"));
+                Yellow.with(|| println!("It's your turn!"));
                 let mut coord;
                 loop {
-                    println!("{}", Yellow.paint("Please enter a valid coordinate: "));
+                    Yellow.with(|| println!("Please enter a valid coordinate: "));
                     coord = util::read_string();
                     if ::model::valid_coordinate(&coord) {
                         break;
                     }
-                    print!("{}", Red.paint("Invalid coordinate! "));
+                    Red.with(|| print!("Invalid coordinate! "));
                 }
                 // modify boards
                 let coord_id = Board::get_index(&coord);
@@ -204,7 +204,7 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                 // if Host won: send message to Client, end game
                 if ::model::game_over(&client) {
                     net::send(&mut stream, MessageType::Lost);
-                    println!("{}", Yellow.paint("Congratulations, you won the game :)"));
+                    Yellow.with(|| println!("Congratulations, you won the game :)"));
                     break;
                 }
             }
@@ -262,7 +262,7 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                 // if Client won: send message to Client, end game
                 if ::model::game_over(&host) {
                     net::send(&mut stream, MessageType::Won);
-                    println!("{}", Yellow.paint("You lost :("));
+                    Yellow.with(|| println!("You lost :("));
                     break;
                 }
             }
