@@ -642,7 +642,7 @@ fn rand_move(mut first: &mut types::Player, mut second: &mut types::Player) {
     match_move(&mut first, &mut second, rand);
 }
 
-/// Function that calculates smart moves for the ai.
+/// Calculates smart moves for the ai.
 fn smart_move(mut first: &mut types::Player, mut second: &mut types::Player) {
 
     // Holds the remaining indices to aim on.
@@ -651,24 +651,125 @@ fn smart_move(mut first: &mut types::Player, mut second: &mut types::Player) {
         vec.push(i);
     }
 
-    // Checks the moore neighborhood of a hit.
-    for _ in first.op_board.iter() {
+    let mut target = 100;
 
+    // Checks the surrounding of a hit.
+    for row in 0..10 {
+        for col in 0..10 {
+            if first.op_board[row][col] == types::SubField::Hit {
+                // The special cases:
+                if row == 0 && col == 0 {
+                    if first.op_board[row][col + 1] == types::SubField::Water {
+                        target = 1;
+                    } else {
+                        if first.op_board[row + 1][col] == types::SubField::Water {
+                            target = 10;
+                        }
+                    }
+                } else if row == 0 {
+                    if col == 9 {
+                        if first.op_board[row][col - 1] == types::SubField::Water {
+                            target = col - 1;
+                        } else {
+                            if first.op_board[row + 1][col] == types::SubField::Water {
+                                target = 10 + col;
+                            }
+                        }
+                    } else if first.op_board[row][col + 1] == types::SubField::Water {
+                        target = col + 1;
+                    } else if first.op_board[row][col - 1] == types::SubField::Water {
+                        target = col - 1;
+                    } else {
+                        if first.op_board[row + 1][col] == types::SubField::Water {
+                            target = 10 + col;
+                        }
+                    }
+                } else if col == 0 {
+                    if row == 9 {
+                        if first.op_board[row - 1][col] == types::SubField::Water {
+                           target = (row - 1) * 10;
+                        } else {
+                            if first.op_board[row][col + 1] == types::SubField::Water {
+                                target = (row * 10) + 1;
+                            }
+                        }
+                    } else if first.op_board[row][col + 1] == types::SubField::Water {
+                        target = row * 10 + 1;
+                    } else if first.op_board[row - 1][col] == types::SubField::Water {
+                        target = (row - 1) * 10;
+                    } else {
+                        if first.op_board[row + 1][col] == types::SubField::Water {
+                            target = (row + 1) * 10;
+                        }
+                    }
+                } else if row == 9 && col == 9 {
+                    if first.op_board[row][col - 1] == types::SubField::Water {
+                        target = row * 10 + col - 1;
+                    } else {
+                        if first.op_board[row - 1][col] == types::SubField::Water {
+                            target = (row - 1) * 10 + col;
+                        }
+                    }
+                } else if row == 9 {
+                    if first.op_board[row][col - 1] == types::SubField::Water {
+                        target = row * 10 + col - 1;
+                    } else if first.op_board[row][col + 1] == types::SubField::Water {
+                        target = row * 10 + col + 1;
+                    } else {
+                        if first.op_board[row - 1][col] == types::SubField::Water {
+                            target = (row - 1) * 10 + col;
+                        }
+                    }
+                } else if col == 9 {
+                    if first.op_board[row][col - 1] == types::SubField::Water {
+                        target = row * 10 + col - 1;
+                    } else if first.op_board[row + 1][col] == types::SubField::Water {
+                        target = (row + 1) * 10 + col;
+                    } else {
+                        if first.op_board[row - 1][col] == types::SubField::Water {
+                            target = (row - 1) * 10 + col;
+                        }
+                    }
+                // The ordinary cases.
+                } else {
+                    if first.op_board[row][col - 1] == types::SubField::Water {
+                        target = row * 10 + col - 1;
+                    } else if first.op_board[row][col + 1] == types::SubField::Water {
+                        target = row * 10 + col + 1;
+                    } else if first.op_board[row - 1][col] == types::SubField::Water {
+                        target = (row - 1) * 10 + col;
+                    } else {
+                        if first.op_board[row + 1][col] == types::SubField::Water {
+                            target = (row + 1) * 10 + col;
+                        }
+                    }
+                }
+            }
+            if target != 100 {
+                break;
+            }
+        }
+        if target != 100 {
+            break;
+        }
     }
 
     let mut rng = thread_rng();
-    let mut rand = *rng.choose(&vec).unwrap();
+
+    if target == 100 {
+        target = *rng.choose(&vec).unwrap();
+    }
 
     // Calculates fields as long as an unused one occurs.
     loop {
-        let row = rand / 10;
-        let col = rand % 10;
+        let row = target / 10;
+        let col = target % 10;
         // It shouldn't hit a target twice.
         if first.op_board[row][col] == types::SubField::Water { break; }
-        remove_idx(rand, &mut vec);
-        rand = *rng.choose(&vec).unwrap();
+        remove_idx(target, &mut vec);
+        target = *rng.choose(&vec).unwrap();
     }
-    match_move(&mut first, &mut second, rand);
+    match_move(&mut first, &mut second, target);
 }
 
 /// Lets the players perform their moves.
