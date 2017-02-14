@@ -33,8 +33,8 @@ pub struct ShipType {
 }
 
 pub struct Player {
-    pub own_board: Vec<SubField>,
-    pub op_board: Vec<SubField>,
+    pub own_board: [[SubField; 10]; 10],
+    pub op_board: [[SubField; 10]; 10],
     pub player_type: PlayerType,
     // The "life" basically - the amount of hits necessary
     // for the opponent to win the game.
