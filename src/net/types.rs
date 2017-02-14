@@ -1,10 +1,9 @@
-use ::model::types::SubField;
+use model::types::SubField;
 
 ///////////////////////////
 ///     Constants       ///
 ///////////////////////////
 pub const LOCALHOST: &'static str = "127.0.0.1";
-pub const DEFAULT_PORT: u16 = 4200;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum MessageType {

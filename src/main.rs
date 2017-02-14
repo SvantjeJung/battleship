@@ -16,12 +16,9 @@ mod view;
 
 use bincode::serde::{deserialize_from, DeserializeError};
 use clap::AppSettings;
-use model::types::{SubField, Mode};
+use model::types::{Board, SubField, Mode};
 use net::types::{self, MessageType};
 use std::net::{Shutdown, TcpStream};
-use std::{str, time, thread};
-use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
 use term_painter::ToStyle;
 use term_painter::Color::*;
 
@@ -90,7 +87,7 @@ fn main() {
                 }
             }
 
-            let mut board = ::model::types::Board::init();
+            let mut board = Board::init();
             if let Some(b) = server_args.value_of("board") {
                 board = util::read_extern_board(b);
             }
@@ -134,26 +131,23 @@ fn main() {
 
             // create client instance and connect to server
             let mut connection = TcpStream::connect((ip, port)).unwrap();
-
             // add CTRL+C system hook, so that connection partner is informed about disconnect
             let client_conn_clone = connection.try_clone().unwrap();
-            let running = Arc::new(AtomicBool::new(true));
-            let _ = running.clone();
             ctrlc::set_handler(move || {
                 net::send(&mut client_conn_clone.try_clone().unwrap(), MessageType::Quit);
                 client_conn_clone.shutdown(Shutdown::Both).expect("shutdown call failed");
             }).expect("Error setting Ctrl+C handler");
 
-            let mut board = ::model::types::Board::init();
+            let mut board = Board::init();
             if let Some(b) = client_args.value_of("board") {
                 board = util::read_extern_board(b);
             }
 
             let mut client = ::model::types::Player {
                 own_board: board.clone(),
-                op_board: ::model::types::Board::init(),
+                op_board: Board::init(),
                 player_type: ::model::types::PlayerType::Human,
-                capacity: ::model::types::Board::targets(&board),
+                capacity: Board::targets(&board),
                 name: name.to_string(),
             };
 
@@ -261,6 +255,9 @@ fn main() {
                                 }
                                 model::print_boards(&client);
                             }
+                            MessageType::Unexpected => {
+                                Red.with(|| println!("Handshake done wrong!"));
+                            }
                             MessageType::Lost => {
                                 Yellow.with(|| println!("You lost the game :("));
                             }
@@ -292,7 +289,7 @@ fn main() {
             println!("--- Single-Player-Mode ---");
             mode = Mode::Single;
         },
-        _ => {}, // Either no subcommand or one not tested for...
+        _ => unimplemented!()
     }
 
     //model::start_round(mode);
@@ -319,4 +316,21 @@ fn validate_port(p: &str) -> u16 {
         }
     }
     port
+}
+
+/// Validate port
+/// Only allow usage of ports from 1024 up to 65535
+/// For clap_app! usage if someone knew how to add this to the macro-call...
+fn valid_port(p: &str) -> Result<(), String> {
+    let msg = "Please choose a valid port (1024-65535)".to_string();
+    match p.parse::<u16>() {
+        Ok(port) => {
+            if port >= 1024 {
+                Ok(())
+            } else {
+                Err(msg)
+            }
+        }
+        Err(_) => Err(msg)
+    }
 }

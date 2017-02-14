@@ -1,16 +1,14 @@
 extern crate chan;
 extern crate rand;
 
-use ::bincode;
-use ::bincode::serde::{deserialize_from, DeserializeError};
-use ::model;
-use ::model::types::{Board, Player, PlayerType, SubField};
-use ::net::{self, types};
-use ::net::types::{MessageType};
-use ::util;
+use bincode;
+use bincode::serde::deserialize_from;
+use model;
+use model::types::{Board, Player, PlayerType, SubField};
+use net::{self, types};
+use net::types::{MessageType};
+use util;
 use std::net::{Shutdown, TcpListener, TcpStream};
-use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
 use term_painter::ToStyle;
 use term_painter::Color::*;
 
@@ -36,6 +34,13 @@ pub fn init(server: Server) {
     let (client_conn, _) = listener.accept().unwrap();
     let mut client_stream = client_conn.try_clone().unwrap();
 
+    // add CTRL+C system hook, so that connection partner is informed about disconnect
+    let client_stream_clone = client_stream.try_clone().unwrap();
+    ::ctrlc::set_handler(move || {
+        net::send(&mut client_stream_clone.try_clone().unwrap(), MessageType::Quit);
+        client_stream_clone.shutdown(Shutdown::Both).expect("shutdown call failed");
+    }).expect("Error setting Ctrl+C handler");
+
     // welcome client
     net::send(
         &mut client_stream,
@@ -44,17 +49,8 @@ pub fn init(server: Server) {
             server.host_name.clone())
     );
 
-    // add CTRL+C system hook, so that connection partner is informed about disconnect
-    let client_stream_clone = client_stream.try_clone().unwrap();
-    let running = Arc::new(AtomicBool::new(true));
-    let _ = running.clone();
-    ::ctrlc::set_handler(move || {
-        net::send(&mut client_stream_clone.try_clone().unwrap(), MessageType::Quit);
-        client_stream_clone.shutdown(Shutdown::Both).expect("shutdown call failed");
-    }).expect("Error setting Ctrl+C handler");
-
     // wait for client to send his name
-    let recv: Result<types::MessageType, DeserializeError> =
+    let recv: Result<types::MessageType, _> =
         deserialize_from(&mut client_stream, bincode::SizeLimit::Infinite);
     let client_name = match recv {
         Ok(received) => {
@@ -68,14 +64,17 @@ pub fn init(server: Server) {
                 },
                 _ => {
                     // unexpected packet
-
-                    "".to_string()
+                    net::send(&mut client_stream, MessageType::Unexpected);
+                    net::send(&mut client_stream, MessageType::Quit);
+                    panic!("Received unexpected packet!")
                 },
             }
         },
         Err(_) => {
-            println!("ERROR hit me");
-            "".to_string()
+            Red.with(|| println!("ERROR while waiting for Login"));
+            net::send(&mut client_stream, MessageType::Quit);
+            client_stream.shutdown(Shutdown::Both).expect("shutdown call failed");
+            return;
         },
     };
 
@@ -117,8 +116,9 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
         match ::model::place_ships(&mut host) {
             Ok(()) => {},
             Err(_) => {
-                println!("Failed placing ships!");
+                Red.with(|| println!("Failed placing ships!"));
                 net::send(&mut stream, MessageType::Quit);
+                stream.shutdown(Shutdown::Both).expect("shutdown call failed");
                 return
             }
         }
@@ -131,7 +131,7 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
     net::send(&mut stream, MessageType::RequestBoard);
 
     loop {
-        let recv: Result<types::MessageType, DeserializeError> =
+        let recv: Result<types::MessageType, _> =
             deserialize_from(&mut stream, bincode::SizeLimit::Infinite);
         match recv {
             Ok(received) => {
@@ -149,7 +149,7 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                 }
             },
             Err(_) => {
-                println!("ERROR board");
+                Red.with(|| println!("ERROR board"));
                 net::send(&mut stream, MessageType::Quit);
                 stream.shutdown(Shutdown::Both).expect("shutdown call failed");
                 return
@@ -218,7 +218,7 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                 // inform Client that its his turn
                 net::send(&mut stream, MessageType::RequestCoord);
                 // wait for input from Client
-                let recv: Result<types::MessageType, DeserializeError> =
+                let recv: Result<types::MessageType, _> =
                     deserialize_from(&mut stream, bincode::SizeLimit::Infinite);
                 let coordinate = match recv {
                     Ok(received) => {
@@ -237,7 +237,9 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                         }
                     },
                     Err(_) => {
-                        println!("ERROR coord");
+                        Red.with(|| println!("ERROR receiving coord"));
+                        net::send(&mut stream, MessageType::Quit);
+                        stream.shutdown(Shutdown::Both).expect("shutdown call failed");
                         return
                     },
                 };

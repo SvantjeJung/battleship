@@ -1,4 +1,4 @@
-use ::util;
+use util;
 use term_painter::ToStyle;
 use term_painter::Color::*;
 use rand::{thread_rng, Rng};
@@ -403,7 +403,7 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), types
 }
 
 /// Resets the particular player's board to prepare the (re)placement.
-fn restart_placement(mut p1: &mut types::Player, p1_call: bool) {
+fn restart_placement(p1: &mut types::Player, p1_call: bool) {
     if p1_call {
         p1.capacity = 0;
         for i in 0..100 {
@@ -535,7 +535,7 @@ pub fn valid_coordinate(input: &str) -> bool {
 /// Check if given character is of valid alphabetic value
 fn valid_alpha(c: char) -> bool {
     match c {
-        'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h' | 'i' | 'j' => true,
+        'a' ... 'j' => true,
         _ => false,
     }
 }
@@ -543,7 +543,7 @@ fn valid_alpha(c: char) -> bool {
 /// Check if given character is of valid numeric value
 fn valid_num(c: char) -> bool {
     match c {
-        '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' => true,
+        '0' ... '9' => true,
         _ => false,
     }
 }
