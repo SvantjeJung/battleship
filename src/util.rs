@@ -27,7 +27,7 @@ pub fn read_usize() -> usize {
 
 /// Reads external board configuration
 /// Does not check for valid ship placement!
-pub fn read_extern_board(f: &str) -> Vec<SubField> {
+pub fn read_extern_board(f: &str) -> [[SubField; 10]; 10] {
     use std::fs::File;
     use std::io::BufReader;
     use std::io::BufRead;
@@ -49,7 +49,9 @@ pub fn read_extern_board(f: &str) -> Vec<SubField> {
         for c in l.chars() {
             match c {
                 'X' => {
-                    board[id] = SubField::Ship;
+                    let row = id / 10;
+                    let col = id % 10;
+                    board[row][col] = SubField::Ship;
                     id += 1
                 },
                 '-' => id += 1,

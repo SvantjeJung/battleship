@@ -69,12 +69,16 @@ fn play(mut connection: TcpStream, mut client: Player) {
                             Ok(res) => {
                                 match res {
                                     MessageType::Hit(id) => {
+                                        let row = id / 10;
+                                        let col = id % 10;
                                         Green.with(|| println!("Hit!"));
-                                        client.op_board[id] = SubField::Hit;
+                                        client.op_board[row][col] = SubField::Hit;
                                     }
                                     MessageType::Miss(id) => {
+                                        let row = id / 10;
+                                        let col = id % 10;
                                         Blue.with(|| println!("Miss!"));
-                                        client.op_board[id] = SubField::Miss;
+                                        client.op_board[row][col] = SubField::Miss;
                                     }
                                     _ => {}
                                 }
@@ -116,10 +120,14 @@ fn play(mut connection: TcpStream, mut client: Player) {
                             Ok(res) => {
                                 match res {
                                     MessageType::Hit(id) => {
-                                        client.own_board[id] = SubField::Hit;
+                                        let row = id / 10;
+                                        let col = id % 10;
+                                        client.own_board[row][col] = SubField::Hit;
                                     }
                                     MessageType::Miss(id) => {
-                                        client.own_board[id] = SubField::Miss;
+                                        let row = id / 10;
+                                        let col = id % 10;
+                                        client.own_board[row][col] = SubField::Miss;
                                     }
                                     _ => {}
                                 }

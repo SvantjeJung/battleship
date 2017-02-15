@@ -17,7 +17,7 @@ pub enum MessageType {
     TurnHost,
     Unexpected,
     Won,
-    Board(Vec<SubField>),
+    Board([[SubField; 10]; 10]),
     Hit(usize),
     Login(String),
     Miss(usize),

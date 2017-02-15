@@ -156,7 +156,9 @@ fn main() {
         _ => unimplemented!()
     }
 
-    //model::start_round(mode);
+    if mode == Mode::Single {
+        model::start_round(mode);
+    }
     println!("");
 }
 

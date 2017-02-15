@@ -22,7 +22,7 @@ pub struct Server {
     pub ip: &'static str,
     pub port: u16,
     pub host_name: String,
-    pub host_board: Vec<SubField>,
+    pub host_board: [[SubField; 10]; 10],
     pub board_dim: u8,
 }
 
