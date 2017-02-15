@@ -388,19 +388,27 @@ fn available_space(player: &types::Player, ship: &types::ShipType) -> bool {
 
         let mut v_val = i;
         let mut h_val = i;
+        let mut invalid = false;
 
         if valid_field(&player, i, "") {
 
             for j in 0..ship.size - 1 {
-
                 v_val = v_val.checked_sub(10).unwrap_or(100);
                 if v_val == 100 && j != ship.size - 1 || !valid_field(&player, v_val, "v") {
+                    invalid = true;
+                    break;
                 } else { v_cnt += 1; }
 
                 h_val += 1;
                 if (h_val % 10) == 0 && j != ship.size - 1 || !valid_field(&player, h_val, "h") {
+                    invalid = true;
+                    break;
                 } else { h_cnt += 1; }
             }
+        }
+
+        if invalid {
+            continue;
         }
 
         if v_cnt == ship.size || h_cnt == ship.size {
@@ -547,7 +555,6 @@ pub fn place_ships(mut p: &mut types::Player) -> Result<(), types::ErrorType> {
                         },
                     }
                 }
-                print_boards(&p);
                 p.capacity += i.size;
             }
         }
@@ -883,7 +890,7 @@ pub fn start_round() {
         match place_ships(&mut player1) {
             Ok(_) => { break; },
             Err(types::ErrorType::DeadEndPlayer1) => {
-                println!("Human DeadEnd");
+                println!("No suitable position left, please restart the ship placement.");
                 restart_placement(&mut player1);
             },
             Err(_) => {},
@@ -894,7 +901,6 @@ pub fn start_round() {
         match place_ships(&mut player2) {
             Ok(_) => { break; },
             Err(types::ErrorType::DeadEndPlayer2) => {
-                println!("AI DeadEnd");
                 restart_placement(&mut player2);
             },
             Err(_) => {},
