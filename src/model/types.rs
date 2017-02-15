@@ -1,16 +1,9 @@
 use std::fmt;
 
-#[derive(PartialEq)]
-pub enum Mode {
-    PvP,
-    Single,
-}
-
 #[derive(PartialEq, Debug, Serialize, Deserialize)]
 pub enum PlayerType {
     Human,
-    DumbAI,
-    SmartAI,
+    AI,
 }
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]

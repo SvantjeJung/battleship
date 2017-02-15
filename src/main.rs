@@ -15,7 +15,7 @@ mod util;
 mod view;
 
 use clap::AppSettings;
-use model::types::{Board, Mode};
+use model::types::{Board};
 use term_painter::ToStyle;
 use term_painter::Color::*;
 
@@ -64,9 +64,6 @@ fn main() {
     ///                                         Start                                           ///
     ///////////////////////////////////////////////////////////////////////////////////////////////
     Yellow.with(|| println!("Welcome to a round of 'battleship'"));
-
-    // default --> player vs. player
-    let mut mode = Mode::PvP;
 
     match battleship.subcommand() {
         ("server", Some(server_args)) => {
@@ -151,14 +148,11 @@ fn main() {
 
             // TODO: create game instance + AI
             println!("--- Single-Player-Mode ---");
-            mode = Mode::Single;
+            model::start_round();
         },
         _ => unimplemented!()
     }
 
-    if mode == Mode::Single {
-        model::start_round(mode);
-    }
     println!("");
 }
 

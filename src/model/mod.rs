@@ -524,7 +524,7 @@ pub fn place_ships(mut p: &mut types::Player) -> Result<(), types::ErrorType> {
     let s4 = types::ShipType{ name: "Battleship".to_string(), size: 5, amount: 1 };
     let ships = vec![s1, s2, s3, s4];
 
-    if p.capacity == 0 && p.name == "SmartAI" {
+    if p.capacity == 0 && p.name == "AI" {
 
         // Holds the remaining indices to place a ship at.
         let mut vec = Vec::new();
@@ -708,13 +708,6 @@ pub fn match_move(
     }
 }
 
-/// Function which provides random moves for the "dumb" ai.
-fn rand_move(mut first: &mut types::Player, mut second: &mut types::Player) {
-    let mut rng = thread_rng();
-    let rand = rng.gen_range(0, 100);
-    match_move(&mut first, &mut second, rand);
-}
-
 /// Calculates smart moves for the ai.
 fn smart_move(mut first: &mut types::Player, mut second: &mut types::Player) {
 
@@ -851,10 +844,9 @@ fn make_move(mut attacker: &mut types::Player, mut opponent: &mut types::Player)
         println!("Enter coordinates, {}:", attacker.name);
         let input = get_input();
         match_move(&mut attacker, &mut opponent, input);
-    } else if attacker.player_type == types::PlayerType::SmartAI {
-        smart_move(&mut attacker, &mut opponent);
+    // AI
     } else {
-        rand_move(&mut attacker, &mut opponent);
+        smart_move(&mut attacker, &mut opponent);
     }
 }
 
@@ -865,7 +857,7 @@ pub fn game_over(player: &types::Player) -> bool {
 
 /// Initializes the players and the boards and provides the
 /// game loop which lets the players perform their moves alternately.
-pub fn start_round(mode: types::Mode) {
+pub fn start_round() {
 
     // Creates the initial (empty) boards (10 x 10) for player1.
     let mut player1 = types::Player {
@@ -882,8 +874,8 @@ pub fn start_round(mode: types::Mode) {
         own_board: [[types::SubField::Water; 10]; 10],
         op_board: [[types::SubField::Water; 10]; 10],
         capacity: 0,
-        player_type : types::PlayerType::SmartAI,
-        name: "SmartAI".to_string(),
+        player_type : types::PlayerType::AI,
+        name: "AI".to_string(),
     };
 
     // Initializes the boards with the player's ships.
@@ -897,13 +889,12 @@ pub fn start_round(mode: types::Mode) {
             Err(_) => {},
         }
     }
-    let mut cnt = 0;
+
     loop {
         match place_ships(&mut player2) {
             Ok(_) => { break; },
             Err(types::ErrorType::DeadEndPlayer2) => {
-                cnt += 1;
-                println!("AI DeadEnd {}", cnt);
+                println!("AI DeadEnd");
                 restart_placement(&mut player2);
             },
             Err(_) => {},
@@ -919,7 +910,6 @@ pub fn start_round(mode: types::Mode) {
             break;
         }
 
-        print_boards(&player2);
         println!("AI - Move:");
 
         make_move(&mut player2, &mut player1);
