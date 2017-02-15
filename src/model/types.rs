@@ -43,6 +43,13 @@ pub struct Player {
     pub name: String,
 }
 
+impl Player {
+    pub fn set_board(&mut self, b: Vec<SubField>) {
+        self.own_board = b.clone();
+        self.capacity = Board::targets(&b);
+    }
+}
+
 impl fmt::Display for SubField {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -54,7 +61,7 @@ impl fmt::Display for SubField {
     }
 }
 
-pub struct Board(Vec<SubField>);
+pub struct Board;
 
 impl Board {
     /// Initializes a board with just water
@@ -91,12 +98,12 @@ impl Board {
     }
 
     /// Returns true if no Ships set on board
-    pub fn empty(board: &Vec<SubField>) -> bool {
+    pub fn empty(board: &[SubField]) -> bool {
         board.iter().all(|elem| *elem == SubField::Water)
     }
 
     /// Returns number of Ships on board
-    pub fn targets(board: &Vec<SubField>) -> usize {
+    pub fn targets(board: &[SubField]) -> usize {
         board.iter().filter(|&elem| *elem == SubField::Ship).count()
     }
 }

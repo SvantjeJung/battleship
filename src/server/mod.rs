@@ -137,8 +137,7 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
             Ok(received) => {
                 match received {
                     MessageType::Board(vec) => {
-                        client.own_board = vec.clone();
-                        client.capacity = Board::targets(&vec);
+                        client.set_board(vec);
                         break;
                     },
                     MessageType::Quit => {
@@ -160,11 +159,12 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                              Choose random start player                                   //
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    let mut current_player = match choose_player(&host, &client).name == host.name {
-        true => CurrentPlayer::Host,
-        false => CurrentPlayer::Client,
+    let mut current_player = if rand::random() {
+        CurrentPlayer::Host
+    } else {
+        CurrentPlayer::Client
     };
-    println!("Starting player: {:?}", Yellow.paint(&current_player));
+    // println!("Starting player: {:?}", Yellow.paint(&current_player));
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //                             Take turns while not ended                                    //
@@ -275,15 +275,4 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
     //                                  Quit game                                                //
     ///////////////////////////////////////////////////////////////////////////////////////////////
     net::send(&mut stream, MessageType::Quit);
-}
-
-/// Randomly choose host or client player to start guessing
-fn choose_player<'a>(p1: &'a Player, p2: &'a Player) -> &'a Player {
-    use self::rand::distributions::{IndependentSample, Range};
-    let between = Range::new(0, 2);
-    let mut rng = rand::thread_rng();
-    match between.ind_sample(&mut rng) {
-        0 => &p1,
-        _ => &p2,
-    }
 }

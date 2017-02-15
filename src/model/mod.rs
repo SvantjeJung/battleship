@@ -8,7 +8,7 @@ pub mod types;
 // Game logic (board, initialization, valid move, set, play or finished)
 
 /// Visualization of the boards.
-fn print(board1: &Vec<types::SubField>, board2: &Vec<types::SubField>) {
+fn print(board1: &[types::SubField], board2: &[types::SubField]) {
     println!("\n{}{}", "------------------ O W N   B O A R D ------------------",
         "-------------------------- O P P O N E N T ---------------");
 

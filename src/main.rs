@@ -14,7 +14,7 @@ mod server;
 mod util;
 mod view;
 
-use bincode::serde::{deserialize_from, DeserializeError};
+use bincode::serde::deserialize_from;
 use clap::AppSettings;
 use model::types::{Board, SubField, Mode};
 use net::types::{self, MessageType};
@@ -75,7 +75,7 @@ fn main() {
         ("server", Some(server_args)) => {
             // required arguments
             let port = validate_port(server_args.value_of("port").unwrap());
-            let name = String::from(server_args.value_of("name").unwrap());
+            let name = server_args.value_of("name").unwrap().to_string();
 
             // optional arguments
             let mut size = BOARD_SIZE;
@@ -87,10 +87,9 @@ fn main() {
                 }
             }
 
-            let mut board = Board::init();
-            if let Some(b) = server_args.value_of("board") {
-                board = util::read_extern_board(b);
-            }
+            let board = server_args.value_of("board")
+                .map(|b| util::read_extern_board(b))
+                .unwrap_or(Board::init());
 
             if let Some(_) = server_args.value_of("ships") {
                 Red.with(|| println!("NOT IMPLEMENTED: Custom ship configuration"));
@@ -138,10 +137,9 @@ fn main() {
                 client_conn_clone.shutdown(Shutdown::Both).expect("shutdown call failed");
             }).expect("Error setting Ctrl+C handler");
 
-            let mut board = Board::init();
-            if let Some(b) = client_args.value_of("board") {
-                board = util::read_extern_board(b);
-            }
+            let board = client_args.value_of("board")
+                .map(|b| util::read_extern_board(b))
+                .unwrap_or(Board::init());
 
             let mut client = ::model::types::Player {
                 own_board: board.clone(),
@@ -156,7 +154,7 @@ fn main() {
                 //let mut buffer = Vec::new();
                 //let msg = client_connection.read_to_end(&mut buffer);
                 //println!("{}", str::from_utf8(&buffer).unwrap());
-                let recv: Result<types::MessageType, DeserializeError> =
+                let recv: Result<types::MessageType, _> =
                     deserialize_from(&mut connection, bincode::SizeLimit::Infinite);
                 match recv {
                     Ok(received) => {
@@ -190,7 +188,7 @@ fn main() {
                                 net::send(&mut connection, MessageType::Shoot(coord));
 
                                 // receive updated opponent board
-                                let result: Result<types::MessageType, DeserializeError> =
+                                let result: Result<types::MessageType, _> =
                                     deserialize_from(&mut connection, bincode::SizeLimit::Infinite);
                                 match result {
                                     Ok(res) => {
@@ -237,7 +235,7 @@ fn main() {
                                     Cyan.paint("to finish turn!"),
                                 );
 
-                                let result: Result<types::MessageType, DeserializeError> =
+                                let result: Result<types::MessageType, _> =
                                     deserialize_from(&mut connection, bincode::SizeLimit::Infinite);
                                 match result {
                                     Ok(res) => {
