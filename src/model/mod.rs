@@ -682,6 +682,7 @@ pub fn match_move(
         types::SubField::Water => {
             println!("Miss - try again.");
             attacker.op_board[row][col] = types::SubField::Miss;
+            opponent.own_board[row][col] = types::SubField::Miss;
             return types::SubField::Miss
         },
         types::SubField::Ship => {
