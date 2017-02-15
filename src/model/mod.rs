@@ -386,29 +386,24 @@ fn available_space(player: &types::Player, ship: &types::ShipType) -> bool {
 
     for i in 0..100 {
 
-        let mut v_val = i;
-        let mut h_val = i;
-        let mut invalid = false;
+        let mut val = i;
 
         if valid_field(&player, i, "") {
-
             for j in 0..ship.size - 1 {
-                v_val = v_val.checked_sub(10).unwrap_or(100);
-                if v_val == 100 && j != ship.size - 1 || !valid_field(&player, v_val, "v") {
-                    invalid = true;
+                val = val.checked_sub(10).unwrap_or(100);
+                if val == 100 && j != ship.size - 1 || !valid_field(&player, val, "v") {
                     break;
                 } else { v_cnt += 1; }
+            }
 
-                h_val += 1;
-                if (h_val % 10) == 0 && j != ship.size - 1 || !valid_field(&player, h_val, "h") {
-                    invalid = true;
+            val = i;
+
+            for j in 0..ship.size - 1 {
+                val += 1;
+                if (val % 10) == 0 && j != ship.size - 1 || !valid_field(&player, val, "h") {
                     break;
                 } else { h_cnt += 1; }
             }
-        }
-
-        if invalid {
-            continue;
         }
 
         if v_cnt == ship.size || h_cnt == ship.size {
@@ -709,14 +704,14 @@ pub fn match_move(
             return types::SubField::Hit
         },
         types::SubField::Miss => {
-            println!("Miss - try again.");
+            println!("Miss - try again (already tried).");
             return types::SubField::Miss
         }
     }
 }
 
 /// Calculates smart moves for the ai.
-fn smart_move(mut first: &mut types::Player, mut second: &mut types::Player) {
+fn smart_move(mut attacker: &mut types::Player, mut opponent: &mut types::Player) {
 
     // Holds the remaining indices to aim on.
     let mut vec = Vec::new();
@@ -729,90 +724,90 @@ fn smart_move(mut first: &mut types::Player, mut second: &mut types::Player) {
     // Checks the surrounding of a hit.
     for row in 0..10 {
         for col in 0..10 {
-            if first.op_board[row][col] == types::SubField::Hit {
+            if attacker.op_board[row][col] == types::SubField::Hit {
                 // The special cases:
                 if row == 0 && col == 0 {
-                    if first.op_board[row][col + 1] == types::SubField::Water {
+                    if attacker.op_board[row][col + 1] == types::SubField::Water {
                         target = 1;
                     } else {
-                        if first.op_board[row + 1][col] == types::SubField::Water {
+                        if attacker.op_board[row + 1][col] == types::SubField::Water {
                             target = 10;
                         }
                     }
                 } else if row == 0 {
                     if col == 9 {
-                        if first.op_board[row][col - 1] == types::SubField::Water {
+                        if attacker.op_board[row][col - 1] == types::SubField::Water {
                             target = col - 1;
                         } else {
-                            if first.op_board[row + 1][col] == types::SubField::Water {
+                            if attacker.op_board[row + 1][col] == types::SubField::Water {
                                 target = 10 + col;
                             }
                         }
-                    } else if first.op_board[row][col + 1] == types::SubField::Water {
+                    } else if attacker.op_board[row][col + 1] == types::SubField::Water {
                         target = col + 1;
-                    } else if first.op_board[row][col - 1] == types::SubField::Water {
+                    } else if attacker.op_board[row][col - 1] == types::SubField::Water {
                         target = col - 1;
                     } else {
-                        if first.op_board[row + 1][col] == types::SubField::Water {
+                        if attacker.op_board[row + 1][col] == types::SubField::Water {
                             target = 10 + col;
                         }
                     }
                 } else if col == 0 {
                     if row == 9 {
-                        if first.op_board[row - 1][col] == types::SubField::Water {
+                        if attacker.op_board[row - 1][col] == types::SubField::Water {
                            target = (row - 1) * 10;
                         } else {
-                            if first.op_board[row][col + 1] == types::SubField::Water {
+                            if attacker.op_board[row][col + 1] == types::SubField::Water {
                                 target = (row * 10) + 1;
                             }
                         }
-                    } else if first.op_board[row][col + 1] == types::SubField::Water {
+                    } else if attacker.op_board[row][col + 1] == types::SubField::Water {
                         target = row * 10 + 1;
-                    } else if first.op_board[row - 1][col] == types::SubField::Water {
+                    } else if attacker.op_board[row - 1][col] == types::SubField::Water {
                         target = (row - 1) * 10;
                     } else {
-                        if first.op_board[row + 1][col] == types::SubField::Water {
+                        if attacker.op_board[row + 1][col] == types::SubField::Water {
                             target = (row + 1) * 10;
                         }
                     }
                 } else if row == 9 && col == 9 {
-                    if first.op_board[row][col - 1] == types::SubField::Water {
+                    if attacker.op_board[row][col - 1] == types::SubField::Water {
                         target = row * 10 + col - 1;
                     } else {
-                        if first.op_board[row - 1][col] == types::SubField::Water {
+                        if attacker.op_board[row - 1][col] == types::SubField::Water {
                             target = (row - 1) * 10 + col;
                         }
                     }
                 } else if row == 9 {
-                    if first.op_board[row][col - 1] == types::SubField::Water {
+                    if attacker.op_board[row][col - 1] == types::SubField::Water {
                         target = row * 10 + col - 1;
-                    } else if first.op_board[row][col + 1] == types::SubField::Water {
+                    } else if attacker.op_board[row][col + 1] == types::SubField::Water {
                         target = row * 10 + col + 1;
                     } else {
-                        if first.op_board[row - 1][col] == types::SubField::Water {
+                        if attacker.op_board[row - 1][col] == types::SubField::Water {
                             target = (row - 1) * 10 + col;
                         }
                     }
                 } else if col == 9 {
-                    if first.op_board[row][col - 1] == types::SubField::Water {
+                    if attacker.op_board[row][col - 1] == types::SubField::Water {
                         target = row * 10 + col - 1;
-                    } else if first.op_board[row + 1][col] == types::SubField::Water {
+                    } else if attacker.op_board[row + 1][col] == types::SubField::Water {
                         target = (row + 1) * 10 + col;
                     } else {
-                        if first.op_board[row - 1][col] == types::SubField::Water {
+                        if attacker.op_board[row - 1][col] == types::SubField::Water {
                             target = (row - 1) * 10 + col;
                         }
                     }
                 // The ordinary cases.
                 } else {
-                    if first.op_board[row][col - 1] == types::SubField::Water {
+                    if attacker.op_board[row][col - 1] == types::SubField::Water {
                         target = row * 10 + col - 1;
-                    } else if first.op_board[row][col + 1] == types::SubField::Water {
+                    } else if attacker.op_board[row][col + 1] == types::SubField::Water {
                         target = row * 10 + col + 1;
-                    } else if first.op_board[row - 1][col] == types::SubField::Water {
+                    } else if attacker.op_board[row - 1][col] == types::SubField::Water {
                         target = (row - 1) * 10 + col;
                     } else {
-                        if first.op_board[row + 1][col] == types::SubField::Water {
+                        if attacker.op_board[row + 1][col] == types::SubField::Water {
                             target = (row + 1) * 10 + col;
                         }
                     }
@@ -838,11 +833,11 @@ fn smart_move(mut first: &mut types::Player, mut second: &mut types::Player) {
         let row = target / 10;
         let col = target % 10;
         // It shouldn't hit a target twice.
-        if first.op_board[row][col] == types::SubField::Water { break; }
+        if attacker.op_board[row][col] == types::SubField::Water { break; }
         remove_idx(target, &mut vec);
         target = *rng.choose(&vec).unwrap();
     }
-    match_move(&mut first, &mut second, target);
+    match_move(&mut attacker, &mut opponent, target);
 }
 
 /// Lets the players perform their moves.
