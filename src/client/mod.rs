@@ -91,9 +91,20 @@ fn play(mut connection: TcpStream, mut client: Player) {
                         model::print_boards(&client);
 
                         if client.capacity == 0 {
-                            match model::place_ships(&mut client) {
-                                Ok(()) => {},
-                                Err(_) => println!("Failure on placing ships.")
+                            loop {
+                                match model::place_ships(&mut client) {
+                                    Ok(()) => { break; },
+                                    Err(model::types::ErrorType::DeadEndHuman) => {
+                                        Red.with(|| println!(
+                                            "No suitable position left, {}",
+                                            "please restart the ship placement.")
+                                        );
+                                        model::restart_placement(&mut client);
+                                    },
+                                    Err(_) => {
+                                        Red.with(|| println!("Failed placing ships!"));
+                                    },
+                                }
                             }
                         }
 

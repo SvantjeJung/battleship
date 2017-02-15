@@ -113,13 +113,21 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
             MessageType::Text("Server is setting its ships, please wait :)".to_string())
         );
         println!("Please set your ships:");
-        match ::model::place_ships(&mut host) {
-            Ok(()) => {},
-            Err(_) => {
-                Red.with(|| println!("Failed placing ships!"));
-                net::send(&mut stream, MessageType::Quit);
-                stream.shutdown(Shutdown::Both).expect("shutdown call failed");
-                return
+        loop {
+            match model::place_ships(&mut host) {
+                Ok(()) => { break; },
+                Err(model::types::ErrorType::DeadEndHuman) => {
+                    Red.with(|| println!(
+                        "No suitable position left, please restart the ship placement.")
+                    );
+                    model::restart_placement(&mut host);
+                },
+                Err(_) => {
+                    Red.with(|| println!("Failed placing ships!"));
+                    net::send(&mut stream, MessageType::Quit);
+                    stream.shutdown(Shutdown::Both).expect("shutdown call failed");
+                    return
+                },
             }
         }
     }

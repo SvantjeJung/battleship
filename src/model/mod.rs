@@ -325,7 +325,7 @@ fn place_ai(
         // in which the remaining boats can't be placed, so we
         // need to restart the whole placement process.
         if vec.len() == 1 {
-            return Err(types::ErrorType::DeadEndPlayer2);
+            return Err(types::ErrorType::DeadEndAI);
         } else if valid_field(&player, rand, "") {
             indices.push(rand);
             remove_idx(rand, &mut vec);
@@ -419,14 +419,8 @@ fn available_space(player: &types::Player, ship: &types::ShipType) -> bool {
 /// The actual placement of the ships.
 fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), types::ErrorType> {
 
-    if player.name == "Player1" {
-        if !available_space(&player, &ship) {
-           return Err(types::ErrorType::DeadEndPlayer1)
-        }
-    } else {
-        if !available_space(&player, &ship) {
-            return Err(types::ErrorType::DeadEndPlayer2)
-        }
+    if !available_space(&player, &ship) {
+        return Err(types::ErrorType::DeadEndHuman)
     }
 
     // Vector to collect the indices for the possible ship position.
@@ -502,7 +496,7 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), types
 }
 
 /// Resets the particular player's board to prepare the (re)placement.
-fn restart_placement(p: &mut types::Player) {
+pub fn restart_placement(p: &mut types::Player) {
     p.capacity = 0;
     for i in 0..10 {
         for j in 0..10 {
@@ -535,7 +529,7 @@ pub fn place_ships(mut p: &mut types::Player) -> Result<(), types::ErrorType> {
             vec.push(i);
         }
 
-        // Asks player2 to place the ships.
+        // Asks the AI to place its ships.
         for i in ships.iter() {
             for _ in 0..i.amount {
                 loop {
@@ -544,7 +538,7 @@ pub fn place_ships(mut p: &mut types::Player) -> Result<(), types::ErrorType> {
                         Err(e) => {
                             match e {
                                 types::ErrorType::InvalidField => {},
-                                types::ErrorType::DeadEndPlayer2 => { return Err(e) },
+                                types::ErrorType::DeadEndAI => { return Err(e) },
                                 _ => { return Err(e) },
                             }
                         },
@@ -554,13 +548,11 @@ pub fn place_ships(mut p: &mut types::Player) -> Result<(), types::ErrorType> {
             }
         }
     } else {
-        // In a replacement situation for p2,
-        // p1 doesn't need to place the ships again.
         if p.capacity == 0 {
 
             print_boards(&p);
 
-            // Asks player1 to place the ships.
+            // Asks the human player to place the ships.
             for i in ships.iter() {
                 for _ in 0..i.amount {
                     loop {
@@ -574,7 +566,7 @@ pub fn place_ships(mut p: &mut types::Player) -> Result<(), types::ErrorType> {
                                         println!("Invalid position for this ship, {}",
                                             "please choose another coordinate.");
                                     },
-                                    types::ErrorType::DeadEndPlayer1 => { return Err(e) },
+                                    types::ErrorType::DeadEndHuman => { return Err(e) },
                                     _ => { return Err(e) },
                                 }
                             },
@@ -884,7 +876,7 @@ pub fn start_round() {
     loop {
         match place_ships(&mut player1) {
             Ok(_) => { break; },
-            Err(types::ErrorType::DeadEndPlayer1) => {
+            Err(types::ErrorType::DeadEndHuman) => {
                 println!("No suitable position left, please restart the ship placement.");
                 restart_placement(&mut player1);
             },
@@ -895,7 +887,7 @@ pub fn start_round() {
     loop {
         match place_ships(&mut player2) {
             Ok(_) => { break; },
-            Err(types::ErrorType::DeadEndPlayer2) => {
+            Err(types::ErrorType::DeadEndAI) => {
                 restart_placement(&mut player2);
             },
             Err(_) => {},
