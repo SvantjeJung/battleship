@@ -419,7 +419,7 @@ fn place(player: &mut types::Player, ship: &types::ShipType) -> Result<(), types
     if player.name == "Player1" {
         if !available_space(&player, &ship) {
            return Err(types::ErrorType::DeadEndPlayer1)
-        }    
+        }
     } else {
         if !available_space(&player, &ship) {
             return Err(types::ErrorType::DeadEndPlayer2)
@@ -524,39 +524,7 @@ pub fn place_ships(mut p: &mut types::Player) -> Result<(), types::ErrorType> {
     let s4 = types::ShipType{ name: "Battleship".to_string(), size: 5, amount: 1 };
     let ships = vec![s1, s2, s3, s4];
 
-    // In a replacement situation for p2,
-    // p1 doesn't need to place the ships again.
-    if p.capacity == 0 && p.name == "Player1" {
-
-        print_boards(&p);
-
-        // Asks player1 to place the ships.
-        for i in ships.iter() {
-            for _ in 0..i.amount {
-                loop {
-                    println!("{}, please enter the first coordinate for your {:?} ({}{}",
-                        p.name, i.name, i.size, " fields).");
-                    match place(&mut p, i) {
-                        Ok(_) => { break; },
-                        Err(e) => {
-                            match e {
-                                types::ErrorType::InvalidField => {
-                                    println!("Invalid position for this ship, {}",
-                                        "please choose another coordinate.");
-                                },
-                                types::ErrorType::DeadEndPlayer1 => { return Err(e) },
-                                _ => { return Err(e) },
-                            }
-                        },
-                    }
-                }
-                p.capacity += i.size;
-                print_boards(&p);
-            }
-        }
-    }
-
-    if p.capacity == 0 && p.name == "Player2" {
+    if p.capacity == 0 && p.name == "SmartAI" {
 
         // Holds the remaining indices to place a ship at.
         let mut vec = Vec::new();
@@ -581,6 +549,38 @@ pub fn place_ships(mut p: &mut types::Player) -> Result<(), types::ErrorType> {
                 }
                 print_boards(&p);
                 p.capacity += i.size;
+            }
+        }
+    } else {
+        // In a replacement situation for p2,
+        // p1 doesn't need to place the ships again.
+        if p.capacity == 0 {
+
+            print_boards(&p);
+
+            // Asks player1 to place the ships.
+            for i in ships.iter() {
+                for _ in 0..i.amount {
+                    loop {
+                        println!("{}, please enter the first coordinate for your {:?} ({}{}",
+                            p.name, i.name, i.size, " fields).");
+                        match place(&mut p, i) {
+                            Ok(_) => { break; },
+                            Err(e) => {
+                                match e {
+                                    types::ErrorType::InvalidField => {
+                                        println!("Invalid position for this ship, {}",
+                                            "please choose another coordinate.");
+                                    },
+                                    types::ErrorType::DeadEndPlayer1 => { return Err(e) },
+                                    _ => { return Err(e) },
+                                }
+                            },
+                        }
+                    }
+                    p.capacity += i.size;
+                    print_boards(&p);
+                }
             }
         }
     }
@@ -883,7 +883,7 @@ pub fn start_round(mode: types::Mode) {
         op_board: [[types::SubField::Water; 10]; 10],
         capacity: 0,
         player_type : types::PlayerType::SmartAI,
-        name: "Player2".to_string(),
+        name: "SmartAI".to_string(),
     };
 
     // Initializes the boards with the player's ships.
@@ -907,9 +907,9 @@ pub fn start_round(mode: types::Mode) {
                 restart_placement(&mut player2);
             },
             Err(_) => {},
-        }    
+        }
     }
-    
+
     loop {
         print_boards(&player1);
         make_move(&mut player1, &mut player2);
