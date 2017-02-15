@@ -22,7 +22,8 @@ pub enum SubField {
 }
 
 pub enum ErrorType {
-    DeadEnd,
+    DeadEndPlayer1,
+    DeadEndPlayer2,
     InvalidField,
 }
 
