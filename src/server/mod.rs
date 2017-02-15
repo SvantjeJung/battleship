@@ -144,7 +144,12 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                         println!("Client closed connection.");
                         return
                     },
-                    _ => continue,
+                    _ => {
+                        Red.with(|| println!("Unexpected packet!"));
+                        net::send(&mut stream, MessageType::Quit);
+                        stream.shutdown(Shutdown::Both).expect("shutdown call failed");
+                        return
+                    },
                 }
             },
             Err(_) => {
@@ -232,7 +237,10 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                             },
                             _ => {
                                 // unexpected packet
-                                "".to_string()
+                                Red.with(|| println!("Unexpected Packet"));
+                                net::send(&mut stream, MessageType::Quit);
+                                stream.shutdown(Shutdown::Both).expect("shutdown call failed");
+                                return
                             },
                         }
                     },
