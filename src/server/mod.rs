@@ -205,6 +205,7 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                     SubField::Hit => {
                         net::send(&mut stream, MessageType::Hit(coord_id));
                         model::print_boards(&host);
+                        current_player = CurrentPlayer::Client;
                     }
                     SubField::Miss => {
                         net::send(&mut stream, MessageType::Miss(coord_id));
@@ -267,6 +268,7 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                         println!("{} hit one of your ships!", client.name);
                         net::send(&mut stream, MessageType::Hit(coord_id));
                         model::print_boards(&host);
+                        current_player = CurrentPlayer::Host;
                     }
                     SubField::Miss => {
                         println!("{} missed your ships.", client.name);
