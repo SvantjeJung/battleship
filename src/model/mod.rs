@@ -566,7 +566,6 @@ pub fn place_ships(mut p: &mut types::Player) -> Result<(), types::ErrorType> {
                                         println!("Invalid position for this ship, {}",
                                             "please choose another coordinate.");
                                     },
-                                    types::ErrorType::DeadEndHuman => { return Err(e) },
                                     _ => { return Err(e) },
                                 }
                             },
