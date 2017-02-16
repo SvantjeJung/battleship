@@ -22,7 +22,7 @@ pub struct Server {
     pub ip: &'static str,
     pub port: u16,
     pub host_name: String,
-    pub host_board: Vec<SubField>,
+    pub host_board: [[SubField; 10]; 10],
     pub board_dim: u8,
 }
 
@@ -113,13 +113,21 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
             MessageType::Text("Server is setting its ships, please wait :)".to_string())
         );
         println!("Please set your ships:");
-        match ::model::place_ships(&mut host) {
-            Ok(()) => {},
-            Err(_) => {
-                Red.with(|| println!("Failed placing ships!"));
-                net::send(&mut stream, MessageType::Quit);
-                stream.shutdown(Shutdown::Both).expect("shutdown call failed");
-                return
+        loop {
+            match model::place_ships(&mut host) {
+                Ok(()) => { break; },
+                Err(model::types::ErrorType::DeadEndHuman) => {
+                    Red.with(|| println!(
+                        "No suitable position left, please restart the ship placement.")
+                    );
+                    model::restart_placement(&mut host);
+                },
+                Err(_) => {
+                    Red.with(|| println!("Failed placing ships!"));
+                    net::send(&mut stream, MessageType::Quit);
+                    stream.shutdown(Shutdown::Both).expect("shutdown call failed");
+                    return
+                },
             }
         }
     }
@@ -197,6 +205,7 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                     SubField::Hit => {
                         net::send(&mut stream, MessageType::Hit(coord_id));
                         model::print_boards(&host);
+                        current_player = CurrentPlayer::Client;
                     }
                     SubField::Miss => {
                         net::send(&mut stream, MessageType::Miss(coord_id));
@@ -259,6 +268,7 @@ fn start(mut host: Player, mut client: Player, mut stream: TcpStream) {
                         println!("{} hit one of your ships!", client.name);
                         net::send(&mut stream, MessageType::Hit(coord_id));
                         model::print_boards(&host);
+                        current_player = CurrentPlayer::Host;
                     }
                     SubField::Miss => {
                         println!("{} missed your ships.", client.name);

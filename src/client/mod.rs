@@ -69,12 +69,16 @@ fn play(mut connection: TcpStream, mut client: Player) {
                             Ok(res) => {
                                 match res {
                                     MessageType::Hit(id) => {
+                                        let row = id / 10;
+                                        let col = id % 10;
                                         Green.with(|| println!("Hit!"));
-                                        client.op_board[id] = SubField::Hit;
+                                        client.op_board[row][col] = SubField::Hit;
                                     }
                                     MessageType::Miss(id) => {
+                                        let row = id / 10;
+                                        let col = id % 10;
                                         Blue.with(|| println!("Miss!"));
-                                        client.op_board[id] = SubField::Miss;
+                                        client.op_board[row][col] = SubField::Miss;
                                     }
                                     _ => {}
                                 }
@@ -87,9 +91,20 @@ fn play(mut connection: TcpStream, mut client: Player) {
                         model::print_boards(&client);
 
                         if client.capacity == 0 {
-                            match model::place_ships(&mut client) {
-                                Ok(()) => {},
-                                Err(_) => println!("Failure on placing ships.")
+                            loop {
+                                match model::place_ships(&mut client) {
+                                    Ok(()) => { break; },
+                                    Err(model::types::ErrorType::DeadEndHuman) => {
+                                        Red.with(|| println!(
+                                            "No suitable position left, {}",
+                                            "please restart the ship placement.")
+                                        );
+                                        model::restart_placement(&mut client);
+                                    },
+                                    Err(_) => {
+                                        Red.with(|| println!("Failed placing ships!"));
+                                    },
+                                }
                             }
                         }
 
@@ -116,10 +131,14 @@ fn play(mut connection: TcpStream, mut client: Player) {
                             Ok(res) => {
                                 match res {
                                     MessageType::Hit(id) => {
-                                        client.own_board[id] = SubField::Hit;
+                                        let row = id / 10;
+                                        let col = id % 10;
+                                        client.own_board[row][col] = SubField::Hit;
                                     }
                                     MessageType::Miss(id) => {
-                                        client.own_board[id] = SubField::Miss;
+                                        let row = id / 10;
+                                        let col = id % 10;
+                                        client.own_board[row][col] = SubField::Miss;
                                     }
                                     _ => {}
                                 }

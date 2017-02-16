@@ -1,16 +1,9 @@
 use std::fmt;
 
-#[derive(PartialEq)]
-pub enum Mode {
-    PvP,
-    Single,
-}
-
 #[derive(PartialEq, Debug, Serialize, Deserialize)]
 pub enum PlayerType {
     Human,
-    DumbAI,
-    SmartAI,
+    AI,
 }
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
@@ -22,7 +15,8 @@ pub enum SubField {
 }
 
 pub enum ErrorType {
-    DeadEnd,
+    DeadEndHuman,
+    DeadEndAI,
     InvalidField,
 }
 
@@ -34,8 +28,8 @@ pub struct ShipType {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Player {
-    pub own_board: Vec<SubField>,
-    pub op_board: Vec<SubField>,
+    pub own_board: [[SubField; 10]; 10],
+    pub op_board: [[SubField; 10]; 10],
     pub player_type: PlayerType,
     // The "life" basically - the amount of hits necessary
     // for the opponent to win the game.
@@ -44,7 +38,7 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn set_board(&mut self, b: Vec<SubField>) {
+    pub fn set_board(&mut self, b: [[SubField; 10]; 10]) {
         self.own_board = b.clone();
         self.capacity = Board::targets(&b);
     }
@@ -65,8 +59,8 @@ pub struct Board;
 
 impl Board {
     /// Initializes a board with just water
-    pub fn init() -> Vec<SubField> {
-        vec![SubField::Water; 100]
+    pub fn init() -> [[SubField; 10]; 10] {
+        [[SubField::Water; 10]; 10]
     }
 
     /// Returns index on board for given inputs
@@ -98,12 +92,23 @@ impl Board {
     }
 
     /// Returns true if no Ships set on board
-    pub fn empty(board: &[SubField]) -> bool {
-        board.iter().all(|elem| *elem == SubField::Water)
+    pub fn empty(board: &[[SubField; 10]; 10]) -> bool {
+        let mut empty = true;
+        for i in 0..10 {
+            if !empty {
+                return empty
+            }
+            empty = board[i].iter().all(|elem| *elem == SubField::Water);
+        }
+        empty
     }
 
     /// Returns number of Ships on board
-    pub fn targets(board: &[SubField]) -> usize {
-        board.iter().filter(|&elem| *elem == SubField::Ship).count()
+    pub fn targets(board: &[[SubField; 10]; 10]) -> usize {
+        let mut cnt = 0;
+        for i in 0..10 {
+            cnt += board[i].iter().filter(|&elem| *elem == SubField::Ship).count();
+        }
+        cnt
     }
 }
