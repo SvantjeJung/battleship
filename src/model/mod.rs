@@ -837,8 +837,14 @@ fn smart_move(mut attacker: &mut types::Player, mut opponent: &mut types::Player
 fn make_move(mut attacker: &mut types::Player, mut opponent: &mut types::Player) {
     if attacker.player_type == types::PlayerType::Human {
         println!("Enter coordinates, {}:", attacker.name);
-        let input = get_input();
-        match_move(&mut attacker, &mut opponent, input);
+        let mut input;
+        loop {
+            input = ::util::read_string();
+            if valid_coordinate(&input) {
+                break;
+            }
+        }
+        match_move(&mut attacker, &mut opponent, ::Board::get_index(&input));
     // AI
     } else {
         smart_move(&mut attacker, &mut opponent);
@@ -852,7 +858,7 @@ pub fn game_over(player: &types::Player) -> bool {
 
 /// Initializes the players and the boards and provides the
 /// game loop which lets the players perform their moves alternately.
-pub fn start_round() {
+pub fn start_round(name: String, board: [[types::SubField; 10]; 10]) {
 
     // Creates the initial (empty) boards (10 x 10) for player1.
     let mut player1 = types::Player {
@@ -861,8 +867,10 @@ pub fn start_round() {
         capacity: 0,
         // Could be extended later to have an AI vs. AI version.
         player_type: types::PlayerType::Human,
-        name: "Player1".to_string(),
+        name: name,
     };
+
+    player1.set_board(board);
 
     // Creates the initial (empty) boards (10 x 10) for player2.
     let mut player2 = types::Player {
@@ -875,6 +883,9 @@ pub fn start_round() {
 
     // Initializes the boards with the player's ships.
     loop {
+        if player1.capacity > 0 {
+            break;
+        }
         match place_ships(&mut player1) {
             Ok(_) => { break; },
             Err(types::ErrorType::DeadEndHuman) => {
@@ -900,7 +911,7 @@ pub fn start_round() {
         make_move(&mut player1, &mut player2);
         if game_over(&player2) {
             println!("G A M E   O V E R");
-            println!("Congratulations, Player1");
+            println!("Congratulations, {}", Yellow.paint(player1.name));
             break;
         }
 

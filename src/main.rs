@@ -55,6 +55,7 @@ fn main() {
             (version: crate_version!())
             (author: crate_authors!())
             (@arg name: +required +takes_value "Name of player")
+            (@arg board: --board +takes_value "load board configuration")
         )
     )
         .setting(AppSettings::SubcommandRequired)
@@ -146,9 +147,12 @@ fn main() {
                 name
             );
 
-            // TODO: create game instance + AI
+            let board = single_args.value_of("board")
+                .map(|b| util::read_extern_board(b))
+                .unwrap_or(Board::init());
+
             println!("--- Single-Player-Mode ---");
-            model::start_round();
+            model::start_round(name.to_string(), board);
         },
         _ => unimplemented!()
     }
@@ -181,6 +185,7 @@ fn validate_port(p: &str) -> u16 {
 /// Validate port
 /// Only allow usage of ports from 1024 up to 65535
 /// For clap_app! usage if someone knew how to add this to the macro-call...
+#[allow(dead_code)]
 fn valid_port(p: &str) -> Result<(), String> {
     let msg = "Please choose a valid port (1024-65535)".to_string();
     match p.parse::<u16>() {
